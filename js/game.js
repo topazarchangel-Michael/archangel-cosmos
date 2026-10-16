@@ -2,6 +2,10 @@
 (function(){
 'use strict';
 var W=48,H=32,TS=AC.art.TS,SAVE_KEY='archangelCosmos.save.v1';
+AC.H=AC.H||{prod:[],tax:[],sell:[],happy:[],growth:[],tick:[],migrate:[],panel:{},act:{},advise:[]};
+function hmul(n,a){var m=1;AC.H[n].forEach(function(f){m*=f.apply(null,a);});return m;}
+function hsum(n,a){var m=0;AC.H[n].forEach(function(f){m+=f.apply(null,a);});return m;}
+var slot=1;function skey(){return slot===1?SAVE_KEY:SAVE_KEY+'.slot'+slot;}
 var G=null, sel=null, timer=null, speed=1, paused=false;
 var BY={}; AC.BUILDINGS.forEach(function(b){BY[b.id]=b;});
 var $=function(id){return document.getElementById(id);};
@@ -41,13 +45,13 @@ function newGame(seed){
   res:{credits:20000,food:6000,water:6000,energy:60,iron:100,metal:0,goods:0,titanium:0,crystal:0,research:0,light:0},
   made:{},counts:{},tech:{},researching:null,missions:{},sold:0,ruinsFound:0,space:{sat:false,probe:false,colony:false},
   market:{},tiles:genPlanet(seed),net:{},log:[]};
- for(var k in AC.MARKET)G.market[k]=AC.MARKET[k].stock;
+ for(var k in AC.MARKET)G.market[k]=AC.MARKET[k].stock;migrate(G);
  say('Welcome, Governor. Scan of Elysia complete: 100,000 Angelic Humans landed safely. Resources detected: iron, food, water, energy. First, place the Capital Hall on flat land (plains, forest or desert).');
 }
 
 /* ---------- economy ---------- */
 function price(k){var m=AC.MARKET[k];return m.base*Math.min(3,Math.max(0.3,Math.pow(m.stock/Math.max(1,G.market[k]),0.6)));}
-function sellBonus(){return 1+0.1*Math.min(3,G.counts.market||0);}
+function sellBonus(){return (1+0.1*Math.min(3,G.counts.market||0))*hmul('sell',[G]);}
 function neighbors(i){var x=i%W,y=(i/W)|0,o=[];[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var nx=x+d[0],ny=y+d[1];if(nx>=0&&ny>=0&&nx<W&&ny<H)o.push(ny*W+nx);});return o;}
 function roadBonus(i){var on=neighbors(i).some(function(n){return G.tiles[n].b==='road';});return on?(G.tech.transport?1.25:1.1):1;}
 
@@ -64,7 +68,7 @@ function tick(){
   c.idle=!ok;if(!ok){idle++;return;}
   for(k in b.cons)add(k,-b.cons[k]);
   var mult=roadBonus(i);
-  for(k in b.prod){var v=b.prod[k]*mult;
+  for(k in b.prod){var v=b.prod[k]*mult*hmul('prod',[G,b,c,i,k]);
    if(b.id==='farm'&&G.tech.agriculture)v*=1.5;
    if(b.id==='mine'&&c.dep)v*=3;
    if(b.id==='solar'&&c.t==='desert')v*=1.5;
@@ -78,18 +82,19 @@ function tick(){
  if(R.energy<5&&idle>0)short+=0.5;
  R.energy=Math.min(R.energy,2000);
  // happiness and taxes
- G.happy=Math.max(0,Math.min(100,55+Math.min(35,happyBonus)-(G.tax-10)*1.5-short*15));
- if(hasCap)add('credits',G.pop/1000*G.tax*0.25*taxMult*(0.5+G.happy/120));
+ G.happy=Math.max(0,Math.min(100,55+Math.min(35,happyBonus)+hsum('happy',[G])-(G.tax-10)*1.5-short*15));
+ if(hasCap)add('credits',G.pop/1000*G.tax*0.25*taxMult*hmul('tax',[G])*(0.5+G.happy/120));
  // population
  var cap=housing(),hf=G.happy/60;
  if(short>=1)G.pop*=0.995;
- else if(G.pop<cap)G.pop=Math.min(cap,G.pop*(1+(0.004+growth)*hf));
+ else if(G.pop<cap)G.pop=Math.min(cap,G.pop*(1+(0.004+growth+hsum('growth',[G]))*hf));
  else G.pop=Math.max(cap,G.pop*0.999);
  // research progress
  if(G.researching){var t=AC.RESEARCH.find(function(x){return x.id===G.researching;});
   if(R.research>=t.cost){R.research-=t.cost;G.tech[t.id]=true;G.researching=null;toast('Research complete: '+t.n);}}
  // market drift back toward normal supply (NPC demand/supply)
  for(var m in G.market)G.market[m]+=(AC.MARKET[m].stock-G.market[m])*0.02;
+ AC.H.tick.forEach(function(f){f(G,add);});
  G.net=net;
  checkMissions();
  if(G.day%30===0)save(true);
@@ -100,7 +105,7 @@ function housing(){var s=G.baseHousing;G.tiles.forEach(function(c){if(c.b&&BY[c.
 
 function checkMissions(){AC.MISSIONS.forEach(function(m){if(G.missions[m.id])return;if(m.check(G)){G.missions[m.id]=true;
  for(var k in m.reward)G.res[k]+=m.reward[k];toast('Mission complete: '+m.n+' (+'+Object.keys(m.reward).map(function(k){return fmt(m.reward[k])+' '+AC.RES[k].n;}).join(', ')+')');
- if(m.id==='M19')setTimeout(function(){toast('Genesis complete! Archangel: Starborn is coming soon. Keep building, or view the Roadmap.');},2600);}});}
+ if(m.id==='M19')setTimeout(function(){toast('Genesis complete! Phase 2 Archangel: Starborn unlocked. Open the Space view (🪐 button).');if(AC.audio)AC.audio.sfx('success');},2600);}});}
 
 /* ---------- actions ---------- */
 function canAfford(cost){for(var k in cost)if((G.res[k]||0)<cost[k])return false;return true;}
@@ -115,7 +120,7 @@ function placeError(b,i){var c=G.tiles[i];
  if(!canAfford(b.cost))return 'Not enough resources.';
  return null;}
 function build(id,i){var b=BY[id],err=placeError(b,i);if(err){toast(err);return false;}
- for(var k in b.cost)G.res[k]-=b.cost[k];G.tiles[i].b=id;AC.art.place(i,W);fxBusy=true;G.counts[id]=(G.counts[id]||0)+1;
+ for(var k in b.cost)G.res[k]-=b.cost[k];G.tiles[i].b=id;AC.art.place(i,W);fxBusy=true;if(AC.audio)AC.audio.sfx(id==='road'?'click':'build');G.counts[id]=(G.counts[id]||0)+1;
  if(id==='outpost'){G.tiles[i].ruin=false;G.ruinsFound++;var rw=[{credits:5000},{research:40},{crystal:15,light:20},{titanium:40}][G.ruinsFound%4];
   for(var k2 in rw)G.res[k2]+=rw[k2];toast('Ruins excavated! Ancient Aethari relics found: '+Object.keys(rw).map(function(k){return rw[k]+' '+AC.RES[k].n;}).join(', '));}
  if(b.unique){sel=null;}
@@ -157,6 +162,7 @@ function advise(){var R=G.res,n=G.net,tips=[];
  if(G.tiles.some(function(c){return c.ruin;})&&!G.ruinsFound)tips.push('I sense ancient ruins (◈) on the surface. An Explorer Outpost could uncover relics.');
  if(G.counts.spaceport&&!G.space.colony)tips.push('The Spaceport is ready. Open the Missions tab to launch toward the Moon.');
  var lore=['Lore: The Royal Heavenly Host once ruled a thousand worlds from the Throne of Topaz.','Lore: The Lumarians are beings of pure light, rumoured to watch from the nebulae.','Lore: Titanborn giants shaped mountains on the old worlds. Are Elysia\'s peaks their work?','Tip: Prices fall when you flood the market. Sell in smaller batches over time.','Tip: Buildings touching a Road produce +10% more.'];
+ AC.H.advise.forEach(function(f){var x=f(G);if(x)tips.push(x);});
  if(!tips.length)tips.push(lore[G.day/5%lore.length|0]);
  say(tips[0]);}
 
@@ -164,19 +170,20 @@ function advise(){var R=G.res,n=G.net,tips=[];
 var cv,ctx;
 var layers=null,terrFor=null,dirty=true,fxBusy=false,lastF=0;
 function drawMap(){dirty=true;}
-function rebuild(){if(terrFor!==G.tiles||!layers){terrFor=G.tiles;layers={terrain:AC.art.terrain(G,W,H)};}layers=AC.art.layersFor(G,W,H,layers.terrain);dirty=false;}
+function rebuild(){if(terrFor!==G.tiles||!layers||AC.render.needTerrain){AC.render.needTerrain=false;terrFor=G.tiles;layers={terrain:AC.art.terrain(G,W,H)};AC.render.prepare(G,W,H,layers.terrain);}layers=AC.art.layersFor(G,W,H,layers.terrain);dirty=false;}
 function loop(now){requestAnimationFrame(loop);
  if(!G||!ctx||document.hidden||!$('game').classList.contains('active'))return;
- if(now-lastF<(fxBusy?16:40))return;lastF=now; // ~25fps ambient, 60fps during effects
+ if(now-lastF<(fxBusy||AC.render.moving()?16:(AC.settings.quality==='low'?66:33)))return;lastF=now; // ~25fps ambient, 60fps during effects
  if(dirty)rebuild();
- fxBusy=AC.art.frame(ctx,G,W,H,layers,now,hover,(hover!=null&&sel)?!placeError(BY[sel],hover):null);}
+ if(AC.space&&AC.space.active()){AC.space.frame(now);return;}
+ fxBusy=AC.render.draw(ctx,G,W,H,layers,now,hover,(hover!=null&&sel)?!placeError(BY[sel],hover):null);}
 function hud(){var R=G.res,n=G.net,s='<span title="Day">'+IC.day+'<b>'+G.day+'</b></span><span title="Population / housing">'+IC.pop+'<b>'+fmt(G.pop)+'</b><small>/'+fmt(housing())+'</small></span><span title="Happiness">'+IC.happy+'<b>'+Math.round(G.happy)+'%</b></span>';
  ['credits','food','water','energy','iron','metal','goods','titanium','crystal','research','light'].forEach(function(k){
   var d=n[k]||0;s+='<span title="'+AC.RES[k].n+'">'+IC[k]+'<b>'+fmt(R[k])+'</b> <small style="color:'+(d<0?'#f88':'#8f8')+'">'+(d>=0?'+':'')+fmt(d)+'</small></span>';});
  $('hud').innerHTML=s;}
 var ROADIMG='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M16 0v32M0 16h32" stroke="#8a7a5a" stroke-width="10"/><path d="M16 0v32M0 16h32" stroke="#d9cfb4" stroke-width="8"/><path d="M16 0v32M0 16h32" stroke="#e8c25a" stroke-dasharray="2 3"/></svg>');
 var IC=AC.art.ICONS,thumbs={};function thumb(id){if(!thumbs[id])thumbs[id]=AC.art.sprite(id,2).toDataURL();return thumbs[id];}
-function costStr(c){return Object.keys(c).map(function(k){return '<span class="cost">'+IC[k]+fmt(c[k])+'</span>';}).join(' ');}
+function costStr(c){return Object.keys(c).map(function(k){return '<span class="cost" title="'+((AC.RES[k]||{}).n||k)+'">'+(IC[k]||'<b>'+((AC.RES[k]||{}).icon||k)+'</b>')+fmt(c[k])+'</span>';}).join(' ');}
 var tab='build';
 function panels(){
  if(tab==='build'){var h='<p class="small">Select a structure, then tap the map. Tap again to deselect. Tap a building with nothing selected to inspect it.</p>',cat='';
@@ -197,12 +204,13 @@ function panels(){
   AC.RESEARCH.forEach(function(t){var st=G.tech[t.id]?'✔ Done':G.researching===t.id?'In progress ('+fmt(G.res.research)+'/'+t.cost+')':(t.req&&!G.tech[t.req])?'Needs '+t.req:'';
    r+='<div class="card'+(G.tech[t.id]?' done':'')+'" data-r="'+t.id+'"><span class="t">'+t.n+'</span> · '+t.cost+' 🔬<br><span class="e">'+t.d+'</span><br><small>'+st+'</small></div>';});
   $('tab-research').innerHTML=r;}}
-function render(){if(!G)return;hud();drawMap();panels();}
-function toast(t){var el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(function(){el.style.display='none';},2500);}
+function render(){if(!G)return;hud();drawMap();panels();if(AC.H.panel[tab]){var el=$('tab-'+tab),ae=document.activeElement;if(el&&!(ae&&ae.tagName==='SELECT'&&el.contains(ae))){var st=el.scrollTop;el.innerHTML=AC.H.panel[tab](G);el.scrollTop=st;}}if(AC.H.render)AC.H.render(G);}
+function toast(t,kind){if(AC.audio)AC.audio.sfx(kind||(/not enough|cannot|must|requires|first|failed|only one|occupied/i.test(t)?'error':'notify'));var el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(function(){el.style.display='none';},2500);}
 
 /* ---------- save / load ---------- */
-function save(quiet){try{G.saved=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(G));if(!quiet)toast('Game saved.');return true;}catch(e){toast('Save failed: '+e.message);return false;}}
-function load(){try{var s=localStorage.getItem(SAVE_KEY);if(!s){toast('No save found.');return false;}G=JSON.parse(s);terrFor=null;dirty=true;say(G.lastTip||'Welcome back, Governor.');render();toast('Game loaded (day '+G.day+').');return true;}catch(e){toast('Load failed.');return false;}}
+function migrate(g){g.v=g.v||1;AC.H.migrate.forEach(function(f){f(g);});g.v=2;return g;}
+function save(quiet){try{G.saved=Date.now();localStorage.setItem(skey(),JSON.stringify(G));if(!quiet)toast('Game saved.');return true;}catch(e){toast('Save failed: '+e.message);return false;}}
+function load(){try{var s=localStorage.getItem(skey());if(!s){toast('No save found.');return false;}G=migrate(JSON.parse(s));terrFor=null;dirty=true;say(G.lastTip||'Welcome back, Governor.');render();toast('Game loaded (day '+G.day+').');return true;}catch(e){toast('Load failed.');return false;}}
 
 /* ---------- screens & input ---------- */
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('active',s.id===id);});
@@ -210,7 +218,7 @@ function show(id){document.querySelectorAll('.screen').forEach(function(s){s.cla
 function startLoop(){stopLoop();timer=setInterval(function(){if(!paused)for(var i=0;i<speed;i++)tick();},1000);}
 function stopLoop(){if(timer)clearInterval(timer);timer=null;}
 var hover=null;
-function tileAt(e){var r=cv.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)/r.width*W),y=Math.floor((e.clientY-r.top)/r.height*H);return (x>=0&&y>=0&&x<W&&y<H)?y*W+x:null;}
+function tileAt(e){var p=AC.render.toWorld(e.clientX,e.clientY),x=Math.floor(p.x/TS),y=Math.floor(p.y/TS);return (x>=0&&y>=0&&x<W&&y<H)?y*W+x:null;}
 function info(i){var c=G.tiles[i],s=AC.TERRAIN[c.t].n+(c.dep?' · iron deposit':'')+(c.ruin?' · ancient ruins':'');if(c.b)s+=' · '+BY[c.b].n+(c.idle?' (idle)':'');$('tileInfo').textContent=s;}
 var starData=null;
 function stars(){var c=$('stars');c.width=innerWidth;c.height=innerHeight;var r=rng(7),n=Math.min(420,(c.width*c.height/3500)|0);starData=[];
@@ -224,32 +232,55 @@ function titleLoop(now){requestAnimationFrame(titleLoop);if(document.hidden||!$(
  var R=Math.min(w,h)*0.55,py=h+R*0.55,pg=x.createRadialGradient(w/2-R*0.3,py-R*0.6,R*0.1,w/2,py,R);pg.addColorStop(0,'#7fc8ff');pg.addColorStop(0.6,'#2a5fb8');pg.addColorStop(1,'#0b1a48');
  x.fillStyle=pg;x.beginPath();x.arc(w/2,py,R,0,6.283);x.fill();x.strokeStyle='rgba(180,220,255,.5)';x.lineWidth=3;x.shadowColor='#9fd2ff';x.shadowBlur=30;x.stroke();x.shadowBlur=0;}
 function init(){
- cv=$('map');cv.width=W*TS;cv.height=H*TS;ctx=cv.getContext('2d');stars();addEventListener('resize',stars);requestAnimationFrame(titleLoop);requestAnimationFrame(loop);document.querySelector('.title-box').insertAdjacentHTML('afterbegin',AC.art.EMBLEM);
+ cv=$('map');ctx=cv.getContext('2d');AC.render.attach(cv,W*TS,H*TS);stars();addEventListener('resize',stars);requestAnimationFrame(titleLoop);requestAnimationFrame(loop);document.querySelector('.title-box').insertAdjacentHTML('afterbegin',AC.art.EMBLEM);
  if(/^https?:/.test(location.protocol)){var ml=document.createElement('link');ml.rel='manifest';ml.href='manifest.json';document.head.appendChild(ml);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});}
  $('phaseList').innerHTML=AC.PHASES.map(function(p){return '<li><b>Phase '+p.n+': '+p.name+'</b>'+(p.status==='live'?'<span class="live">PLAYABLE</span>':'<span class="soon">COMING SOON</span>')+'<br><small>Rank: '+p.title+'. '+p.desc+'</small></li>';}).join('');
  $('btnContinue').disabled=!localStorage.getItem(SAVE_KEY);
+ setupExtras();
  $('btnNew').onclick=function(){var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();say(G.lastTip);};
  $('btnContinue').onclick=function(){if(load())show('game');};
- $('btnRoadmap').onclick=function(){show('roadmap');};$('btnHelp').onclick=function(){show('help');};
+ $('btnRoadmap').onclick=function(){show('roadmap');};if(AC.H.init)AC.H.init.forEach(function(f){f();});$('btnHelp').onclick=function(){show('help');};
  document.querySelectorAll('.back').forEach(function(b){b.onclick=function(){show('title');};});
  $('tabs').onclick=function(e){var t=e.target.dataset.tab;if(!t)return;tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});
   document.querySelectorAll('.tab').forEach(function(d){d.classList.toggle('on',d.id==='tab-'+t);});render();};
- $('side').addEventListener('click',function(e){var el=e.target.closest('[data-b],[data-sell],[data-tax],[data-r],[data-launch]');if(!el||!G)return;var d=el.dataset;
+ $('side').addEventListener('click',function(e){var el=e.target.closest('[data-b],[data-sell],[data-tax],[data-r],[data-launch],[data-act]');if(!el||!G)return;var d=el.dataset;if(AC.audio)AC.audio.sfx('click');
+  if(d.act){var f=AC.H.act[d.act];if(f){f(G,d.arg,el);render();}return;}
   if(d.b){if(el.classList.contains('locked'))return toast('Research '+BY[d.b].req+' to unlock.');sel=sel===d.b?null:d.b;render();}
   if(d.sell)trade(d.sell,+d.q);
   if(d.tax){G.tax=Math.max(0,Math.min(30,G.tax+(+d.tax)));render();}
   if(d.r){var t=AC.RESEARCH.find(function(x){return x.id===d.r;});if(G.tech[t.id])return;if(t.req&&!G.tech[t.req])return toast('Requires '+t.req);G.researching=t.id;toast('Researching '+t.n);render();}
   if(d.launch)launch(d.launch);});
- cv.addEventListener('mousemove',function(e){var i=tileAt(e);if(i!==hover){hover=i;if(i!=null)info(i);}});
- cv.addEventListener('click',function(e){var i=tileAt(e);if(i==null)return;hover=i;info(i);
+ cv.addEventListener('mousemove',function(e){if(AC.space&&AC.space.active())return;var i=tileAt(e);if(i!==hover){hover=i;if(i!=null)info(i);}});
+ cv.addEventListener('click',function(e){if(AC.render.wasDrag())return;if(AC.space&&AC.space.active())return AC.space.click(e);var i=tileAt(e);if(i==null)return;hover=i;info(i);
   if(sel)build(sel,i);else if(G.tiles[i].b){var b=BY[G.tiles[i].b];if(confirm(b.n+'\n'+b.d+'\n\nDemolish it for a 50% refund?'))demolish(i);}});
  $('btnPause').onclick=function(){paused=!paused;this.textContent=paused?'Resume':'Pause';};
  $('btnSpeed').onclick=function(){speed=speed===1?2:speed===2?5:1;this.textContent='Speed x'+speed;};
  $('btnSave').onclick=function(){save();};$('btnLoad').onclick=function(){load();};
  $('btnTitle').onclick=function(){save(true);$('btnContinue').disabled=false;show('title');};
- $('btnReset').onclick=function(){if(confirm('Delete saved game?')){localStorage.removeItem(SAVE_KEY);toast('Save deleted.');}};
+ $('btnReset').onclick=function(){if(confirm('Delete saved game?')){localStorage.removeItem(skey());toast('Save deleted.');}};
 }
+function switchTab(t){tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});document.querySelectorAll('.tab').forEach(function(d){d.classList.toggle('on',d.id==='tab-'+t);});render();}
+AC.H.act.tab=function(a,b){switchTab(typeof a==='string'?a:b);};
+function setupExtras(){var S=AC.settings;
+ var m=$('settingsBox');m.innerHTML='<h3>Settings</h3><div class="row"><span>Graphics quality</span><select id="selQuality"><option value="auto">Auto</option><option value="high">High (desktop)</option><option value="low">Low (phones)</option></select></div>'+
+  '<div class="row"><span>Day / night cycle</span><input type="checkbox" id="chkDay"></div>'+
+  '<div class="row"><span>Music</span><input type="range" id="rngMusic" min="0" max="1" step="0.05"></div><div class="row"><span>Sound effects</span><input type="range" id="rngSfx" min="0" max="1" step="0.05"></div>'+
+  '<div class="row"><span>Mute all</span><input type="checkbox" id="chkMute"></div><div class="row"><span>Save slot</span><select id="selSlot"></select></div>';
+ $('selQuality').value=S.quality;$('chkDay').checked=S.daynight;$('rngMusic').value=S.music;$('rngSfx').value=S.sfx;$('chkMute').checked=S.muted;
+ function slots(){var n=1+(AC.store?AC.store.extraSlots():0),h='';for(var i=1;i<=n;i++)h+='<option value="'+i+'">Slot '+i+(i>1?' (Founder)':'')+'</option>';$('selSlot').innerHTML=h;$('selSlot').value=slot;}slots();
+ $('selQuality').onchange=function(){S.quality=this.value;AC.saveSettings();AC.render.resize();AC.render.needTerrain=true;dirty=true;toast('Graphics: '+S.q);};
+ $('chkDay').onchange=function(){S.daynight=this.checked;AC.saveSettings();};
+ $('rngMusic').oninput=function(){S.music=+this.value;AC.saveSettings();AC.audio.apply();};
+ $('rngSfx').oninput=function(){S.sfx=+this.value;AC.saveSettings();AC.audio.apply();};
+ $('chkMute').onchange=function(){S.muted=this.checked;AC.saveSettings();AC.audio.apply();$('btnMute').textContent=S.muted?'🔇':'🔊';};
+ $('selSlot').onchange=function(){slot=+this.value;toast('Using save slot '+slot+'.');};
+ $('btnMute').textContent=S.muted?'🔇':'🔊';
+ $('btnMute').onclick=function(){S.muted=!S.muted;AC.saveSettings();AC.audio.apply();this.textContent=S.muted?'🔇':'🔊';$('chkMute').checked=S.muted;};
+ $('btnZoomIn').onclick=function(){AC.render.zoom(1.3);};$('btnZoomOut').onclick=function(){AC.render.zoom(1/1.3);};$('btnFit').onclick=function(){AC.render.fitView();};
+ $('btnSpaceView').onclick=function(){AC.space.toggle();};
+ setInterval(function(){var c=$('clock');if(c&&G)c.textContent=AC.space.active()?'Helion System':'Elysia '+AC.render.timeLabel();},1000);
+ if(AC.store&&AC.store.owns('founder'))$('title').querySelector('.title-box').insertAdjacentHTML('beforeend','<p class="badge">✦ Founder ✦</p>');}
 // Public hooks (used by tests and future phases)
-AC.api={newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
+AC.api={switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
 document.addEventListener('DOMContentLoaded',init);
 })();

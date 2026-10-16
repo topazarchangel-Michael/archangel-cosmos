@@ -1,11 +1,12 @@
 /* Archangel Cosmos - game data. Add new phases/buildings/missions here. */
 var AC = window.AC || {};
 window.AC = AC;
+AC.H = AC.H || {prod:[],tax:[],sell:[],happy:[],growth:[],tick:[],migrate:[],panel:{},act:{},advise:[],init:[]};
 
 AC.PHASES = [
   {id:'genesis', n:1, name:'Archangel: Genesis', status:'live', title:'Planet Governor',
    desc:'Govern Planet Elysia: city building, resource economy, Archangel AI advisor, missions, first spaceport and moon colony.'},
-  {id:'starborn', n:2, name:'Archangel: Starborn', status:'soon', title:'System Governor',
+  {id:'starborn', n:2, name:'Archangel: Starborn', status:'live', title:'System Governor',
    desc:'Solar systems, interplanetary trade, corporations, research and diplomacy with the Lumarians and Aethari.'},
   {id:'empires', n:3, name:'Galactic Empires', status:'soon', title:'Galactic Emperor',
    desc:'Thousands of star systems, alliances, the Grand Royal Council parliament, Titanborn and Celestian politics.'},
@@ -19,7 +20,8 @@ AC.RES = {
   credits:{n:'Credits',icon:'₵'}, food:{n:'Food',icon:'🌾'}, water:{n:'Water',icon:'💧'},
   energy:{n:'Energy',icon:'⚡'}, iron:{n:'Iron',icon:'⛏'}, metal:{n:'Refined Metal',icon:'▣'},
   goods:{n:'Industrial Goods',icon:'⚙'}, titanium:{n:'Titanium',icon:'◆'}, crystal:{n:'Crystal',icon:'✧'},
-  research:{n:'Research',icon:'🔬'}, light:{n:'Celestial Light',icon:'✦'}
+  research:{n:'Research',icon:'🔬'}, light:{n:'Celestial Light',icon:'✦'},
+  he3:{n:'Helium-3',icon:'He'}, gas:{n:'Stellar Gas',icon:'G'}, qmatter:{n:'Quantum Matter',icon:'Q'}, topazium:{n:'Topazium',icon:'T'}, darke:{n:'Dark Energy',icon:'D'}
 };
 // Market: base price and "normal" market stock (NPC supply). Price follows supply/demand.
 AC.MARKET = {

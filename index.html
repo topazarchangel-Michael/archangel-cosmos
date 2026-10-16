@@ -34,6 +34,9 @@
    <li>Each tick is one day. Structures produce and consume resources. Population grows when there is food, water, housing and energy.</li>
    <li>Sell surplus in the <b>Market</b>: prices rise when stock is scarce and fall when you flood the market.</li>
    <li>Follow <b>Missions</b> and the <b>Archangel AI</b> advisor. Reach the Moon to finish Genesis (about an hour).</li>
+   <li><b>Host</b> tab: the Royal Heavenly Host council (decrees, sector governors) and diplomacy with the Lumarians, Aethari, Titanborn and Celestians as you meet them.</li>
+   <li>After the Moon colony, Phase 2 <b>Starborn</b> opens: press 🪐 for the Helion solar system, build ships and colonise worlds.</li>
+   <li>Zoom with the mouse wheel, pinch, or the ＋/－ buttons; drag to pan.</li>
    <li>The game autosaves every 30 days; you can also Save/Load manually.</li>
   </ul><button class="back">Back</button></div>
 </div>
@@ -41,20 +44,24 @@
 <div id="game" class="screen">
   <header id="hud"></header>
   <main>
-    <div id="mapWrap"><canvas id="map"></canvas><div id="tileInfo"></div></div>
+    <div id="mapWrap"><canvas id="map"></canvas><div id="tileInfo"></div><div id="mapCtl"><span id="clock"></span><button id="btnZoomIn" title="Zoom in">＋</button><button id="btnZoomOut" title="Zoom out">－</button><button id="btnFit" title="Fit map">⤢</button><button id="btnSpaceView" title="Solar system">🪐</button><button id="btnMute" title="Sound">🔊</button></div></div>
     <aside id="side">
       <nav id="tabs">
         <button data-tab="build" class="on">Build</button><button data-tab="market">Market</button>
-        <button data-tab="missions">Missions</button><button data-tab="research">Research</button><button data-tab="menu">Menu</button>
+        <button data-tab="missions">Missions</button><button data-tab="research">Research</button><button data-tab="host">Host</button><button data-tab="space">Space</button><button data-tab="store">Store</button><button data-tab="menu">Menu</button>
       </nav>
       <div id="tab-build" class="tab on"></div>
       <div id="tab-market" class="tab"></div>
       <div id="tab-missions" class="tab"></div>
       <div id="tab-research" class="tab"></div>
+      <div id="tab-host" class="tab"></div>
+      <div id="tab-space" class="tab"></div>
+      <div id="tab-store" class="tab"></div>
       <div id="tab-menu" class="tab">
         <button id="btnPause">Pause</button> <button id="btnSpeed">Speed x1</button>
         <button id="btnSave">Save</button> <button id="btnLoad">Load</button>
         <button id="btnTitle">Title Screen</button> <button id="btnReset">Delete Save</button>
+        <div id="settingsBox"></div>
         <p class="small">Saves are stored in this browser only (localStorage). Clearing browser data erases them.</p>
       </div>
       <div id="advisor"><div class="ai-head">&#10022; Archangel AI Ultra Intelligence</div><div id="aiText"></div></div>
@@ -64,5 +71,10 @@
 </div>
 <script src="js/data.js"></script>
 <script src="js/art.js"></script>
+<script src="js/render.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/store.js"></script>
+<script src="js/host.js"></script>
+<script src="js/starborn.js"></script>
 <script src="js/game.js"></script>
 </body></html>
