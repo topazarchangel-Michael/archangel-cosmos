@@ -94,5 +94,5 @@ H.panel.ai=function(G){var a=analyse(G),p=plan(G),h='<h3>Archangel AI Ultra Inte
  G.chronicle.slice(-5).reverse().forEach(function(e){h+='<div class="small">Day '+e.day+': '+e.text+'</div>';});return h;};
 // richer bottom-panel tips
 H.advise.unshift(function(G){var a=analyse(G);if(a.warnings.length)return a.warnings[0]+' '+(plan(G)[0]?'Suggestion: build a '+plan(G)[0].n+'.':'');return null;});
-AC.advisor={analyse:analyse,plan:plan,answer:answer,book:book};
+AC.advisor={KB:KB,analyse:analyse,plan:plan,answer:answer,book:book};
 })();

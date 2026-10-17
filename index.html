@@ -37,6 +37,7 @@
    <li><b>Host</b> tab: the Royal Heavenly Host council (decrees, sector governors) and diplomacy with the Lumarians, Aethari, Titanborn and Celestians as you meet them.</li>
    <li>After the Moon colony, Phase 2 <b>Starborn</b> opens: press 🪐 for the Helion solar system, build ships and colonise worlds.</li>
    <li><b>Street view</b> (🚶): walk your Angelic avatar. WASD/arrows to move, mouse to look (click to lock), Shift to run, hold Space to fly, E to interact, V to switch camera. On phones use the joystick and buttons. New buildings take a few days to construct; speed them up with Celestial Light.</li>
+   <li>Phase 4 <b>Universe Architect</b> (🌠, Architect tab): design worlds, terraform them, seed life, then build star systems and galaxies. Phase 5 <b>Archangel Cosmos</b> (Cosmos tab): kindle universes, tune their cosmic constants and complete the Celestial Ascension.</li>
    <li>Phase 3 <b>Galactic Empires</b> (🌌) follows Starborn. The <b>Corps</b> tab runs your corporation and alliances; the <b>AI</b> tab answers questions and writes your Chronicle.</li>
    <li>In 3D: drag to rotate, right-drag or two fingers to pan, scroll or pinch to zoom. Zoom with the mouse wheel, pinch, or the ＋/－ buttons; drag to pan.</li>
    <li>The game autosaves every 30 days; you can also Save/Load manually.</li>
@@ -46,11 +47,11 @@
 <div id="game" class="screen">
   <header id="hud"></header>
   <main>
-    <div id="mapWrap"><canvas id="map"></canvas><div id="tileInfo"></div><div id="mapCtl"><span id="clock"></span><button id="btnZoomIn" title="Zoom in">＋</button><button id="btnZoomOut" title="Zoom out">－</button><button id="btnFit" title="Whole planet">⤢</button><button id="btnCity" title="Centre on city">⌂</button><button id="btnView" title="Toggle angled / top-down view">▦</button><button id="btnStreet" title="Street view: walk your Angelic avatar">🚶</button><button id="btn3d" title="Toggle 3D / 2.5D">3D</button><button id="btnSpaceView" title="Solar system">🪐</button><button id="btnGalaxy" title="Galaxy map">🌌</button><button id="btnMute" title="Sound">🔊</button></div></div>
+    <div id="mapWrap"><canvas id="map"></canvas><div id="tileInfo"></div><div id="mapCtl"><span id="clock"></span><button id="btnZoomIn" title="Zoom in">＋</button><button id="btnZoomOut" title="Zoom out">－</button><button id="btnFit" title="Whole planet">⤢</button><button id="btnCity" title="Centre on city">⌂</button><button id="btnView" title="Toggle angled / top-down view">▦</button><button id="btnStreet" title="Street view: walk your Angelic avatar">🚶</button><button id="btn3d" title="Toggle 3D / 2.5D">3D</button><button id="btnSpaceView" title="Solar system">🪐</button><button id="btnGalaxy" title="Galaxy map">🌌</button><button id="btnArch" title="Creation view">🌠</button><button id="btnMute" title="Sound">🔊</button></div></div>
     <aside id="side">
       <nav id="tabs">
         <button data-tab="build" class="on">Build</button><button data-tab="market">Market</button>
-        <button data-tab="missions">Missions</button><button data-tab="research">Research</button><button data-tab="host">Host</button><button data-tab="space">Space</button><button data-tab="galaxy">Galaxy</button><button data-tab="corps">Corps</button><button data-tab="ai">AI</button><button data-tab="store">Store</button><button data-tab="menu">Menu</button>
+        <button data-tab="missions">Missions</button><button data-tab="research">Research</button><button data-tab="host">Host</button><button data-tab="space">Space</button><button data-tab="galaxy">Galaxy</button><button data-tab="corps">Corps</button><button data-tab="architect">Architect</button><button data-tab="cosmos">Cosmos</button><button data-tab="ai">AI</button><button data-tab="store">Store</button><button data-tab="menu">Menu</button>
       </nav>
       <div id="tab-build" class="tab on"></div>
       <div id="tab-market" class="tab"></div>
@@ -62,6 +63,8 @@
       <div id="tab-galaxy" class="tab"></div>
       <div id="tab-corps" class="tab"></div>
       <div id="tab-ai" class="tab"></div>
+      <div id="tab-architect" class="tab"></div>
+      <div id="tab-cosmos" class="tab"></div>
       <div id="tab-menu" class="tab">
         <button id="btnPause">Pause</button> <button id="btnSpeed">Speed x1</button>
         <button id="btnSave">Save</button> <button id="btnLoad">Load</button>
@@ -86,5 +89,6 @@
 <script src="js/advisor.js"></script>
 <script src="js/view3d.js"></script>
 <script src="js/street.js"></script>
+<script src="js/architect.js"></script>
 <script src="js/game.js"></script>
 </body></html>

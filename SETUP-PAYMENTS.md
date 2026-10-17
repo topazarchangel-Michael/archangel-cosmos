@@ -18,6 +18,8 @@ In Stripe go to **Product catalogue → Add product**. Create these, each as a *
 |---|---|---|
 | `starborn` | Archangel: Starborn expansion | 7.99 |
 | `empires` | Galactic Empires expansion | 9.99 |
+| `architect` | Universe Architect expansion | 12.99 |
+| `cosmos` | Archangel Cosmos expansion | 14.99 |
 | `founder` | Founder Supporter Pack | 14.99 |
 | `skin_gold` | Building skin: Gilded Throne | 2.99 |
 | `skin_sapphire` | Building skin: Sapphire Host | 2.99 |

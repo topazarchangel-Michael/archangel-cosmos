@@ -107,3 +107,13 @@ body.galaxy #tileInfo{display:none}
 #stJoy i{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,215,106,.8)}
 #stTouch{position:absolute;right:20px;bottom:24px;display:none;gap:8px}#stTouch button{width:58px;height:58px;border-radius:50%;font-weight:bold}
 @media (pointer:coarse){#stJoy{display:block}#stTouch{display:flex}}
+#arch3d{position:absolute;inset:0;width:100%;height:100%;display:none;touch-action:none}
+body.arch #arch3d{display:block}body.arch #map3d,body.arch #tileInfo{display:none!important}body.arch.v3d #map{visibility:hidden}
+.create{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}.create label{font-size:12px;display:flex;flex-direction:column;gap:2px}.create select,.create input[type=text],.create input:not([type]){background:#14183f;color:#fff;border:1px solid var(--line);border-radius:6px;padding:4px;font:inherit;font-size:12px}
+.card.done{opacity:.7;border-color:#7f7}
+#ending{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 40%,#3a2a6a,#05040f 70%);color:#fff3d0;text-align:center;overflow:hidden;display:flex;flex-direction:column;align-items:center;padding-top:6vh;font-family:Georgia,serif}
+#ending .end-title{font-size:26px;letter-spacing:2px;animation:fadein 3s}#ending .end-title b{font-size:44px;color:#ffd76a;text-shadow:0 0 30px #ffd76a}
+#ending .end-lore{max-width:560px;opacity:.9;padding:0 16px}#ending .credits{height:40vh;overflow:hidden;width:100%;position:relative;mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent)}
+#ending .roll{animation:roll 40s linear infinite;line-height:1.9;font-size:17px}@keyframes roll{from{transform:translateY(40vh)}to{transform:translateY(-100%)}}@keyframes fadein{from{opacity:0}to{opacity:1}}
+#ending .end-glow{position:absolute;inset:-20%;background:conic-gradient(from 0deg,transparent,rgba(255,215,106,.08),transparent 30%);animation:spin 30s linear infinite;pointer-events:none}@keyframes spin{to{transform:rotate(360deg)}}
+#ending button{margin-top:14px;z-index:1}

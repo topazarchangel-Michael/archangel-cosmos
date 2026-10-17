@@ -10,9 +10,9 @@ AC.PHASES = [
    desc:'Solar systems, interplanetary trade, corporations, research and diplomacy with the Lumarians and Aethari.'},
   {id:'empires', n:3, name:'Galactic Empires', status:'live', title:'Galactic Emperor',
    desc:'Thousands of star systems, alliances, the Grand Royal Council parliament, Titanborn and Celestian politics.'},
-  {id:'architect', n:4, name:'Universe Architect', status:'soon', title:'Universe Creator',
+  {id:'architect', n:4, name:'Universe Architect', status:'live', title:'Universe Creator',
    desc:'Universe, race, story and event editors. Design your own galaxies and histories.'},
-  {id:'cosmos', n:5, name:'Archangel Cosmos', status:'soon', title:'Archangel Prime',
+  {id:'cosmos', n:5, name:'Archangel Cosmos', status:'live', title:'Archangel Prime',
    desc:'Shared online cosmos, creator marketplace, AI-generated content and inter-universe travel. (TAC appears only as a fictional in-game currency.)'}
 ];
 

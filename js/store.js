@@ -19,13 +19,15 @@ var CONFIG={
  VERIFY_URL:'',                // your deployed verification worker, e.g. 'https://archangel-pay.<you>.workers.dev/verify' (see SETUP-PAYMENTS.md)
  CURRENCY:'AUD',
  LINKS:{                       // e.g. 'https://buy.stripe.com/xxxx' or 'https://ko-fi.com/s/xxxx'
-  founder:'',starborn:'',empires:'',   // Stripe Payment Links: https://buy.stripe.com/... (see SETUP-PAYMENTS.md)
+  founder:'',starborn:'',empires:'',architect:'',cosmos:'',   // Stripe Payment Links: https://buy.stripe.com/... (see SETUP-PAYMENTS.md)
   skin_gold:'',skin_sapphire:'',skin_rose:'',halo_seraph:'',halo_cherub:'',theme_aurora:'',theme_twilight:''},
  AD_COOLDOWN_MIN:10
 };
 var ITEMS=[
  {id:'starborn',type:'expansion',n:'Archangel: Starborn expansion',price:7.99,d:'Phase 2: the Helion solar system, ships, colonies and space resources. (Genesis is free forever.)'},
- {id:'empires',type:'expansion',n:'Galactic Empires expansion',price:9.99,d:'Phase 3 (in development).',soon:true},
+ {id:'empires',type:'expansion',n:'Galactic Empires expansion',price:9.99,d:'Phase 3: galaxy map, FTL fleets, rival empires, galactic trade and sectors.'},
+ {id:'architect',type:'expansion',n:'Universe Architect expansion',price:12.99,d:'Phase 4: create stars, worlds, systems and galaxies; terraform and seed life.'},
+ {id:'cosmos',type:'expansion',n:'Archangel Cosmos expansion',price:14.99,d:'Phase 5: the multiverse, cosmic constants, Celestial Ascension and the ending.'},
  {id:'founder',type:'pack',n:'Founder Supporter Pack',price:14.99,d:'One-time: Founder badge, 3 extra save slots, early access to new phases, golden Founder halo.'},
  {id:'skin_gold',type:'skin',n:'Building skin: Gilded Throne',price:2.99,d:'Rich gold leaf on every structure. Cosmetic only.'},
  {id:'skin_sapphire',type:'skin',n:'Building skin: Sapphire Host',price:2.99,d:'Cool sapphire and silver marble. Cosmetic only.'},

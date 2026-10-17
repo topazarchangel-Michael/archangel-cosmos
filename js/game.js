@@ -185,6 +185,7 @@ function loop(now){requestAnimationFrame(loop);
  if(!G||!ctx||document.hidden||!$('game').classList.contains('active'))return;
  if(now-lastF<(fxBusy||AC.render.moving()?16:(AC.settings.quality==='low'?66:33)))return;lastF=now; // ~25fps ambient, 60fps during effects
  if(dirty)rebuild();
+ if(AC.arch&&AC.arch.active()){AC.arch.frame(now);return;}
  if(AC.galaxy&&AC.galaxy.active()){AC.galaxy.frame(now);return;}
  if(AC.space&&AC.space.active()){AC.space.frame(now);return;}
  if(AC.v3d&&AC.v3d.active()){AC.v3d.frame(now);return;}
@@ -299,7 +300,7 @@ function setupExtras(){var S=AC.settings;
  $('btnMute').textContent=S.muted?'🔇':'🔊';
  $('btnMute').onclick=function(){S.muted=!S.muted;AC.saveSettings();AC.audio.apply();this.textContent=S.muted?'🔇':'🔊';$('chkMute').checked=S.muted;};
  $('btnZoomIn').onclick=function(){AC.render.zoom(1.3);};$('btnZoomOut').onclick=function(){AC.render.zoom(1/1.3);};$('btnFit').onclick=function(){AC.render.fitView();};
- $('btnSpaceView').onclick=function(){if(AC.galaxy.active())AC.galaxy.toggle();AC.space.toggle();};$('btnGalaxy').onclick=function(){if(AC.street.active())AC.street.exit();AC.galaxy.toggle();};$('btnStreet').onclick=function(){AC.H.act.street();};
+ $('btnSpaceView').onclick=function(){if(AC.galaxy.active())AC.galaxy.toggle();AC.space.toggle();};$('btnGalaxy').onclick=function(){if(AC.street.active())AC.street.exit();if(AC.arch.active())AC.arch.toggle();AC.galaxy.toggle();};$('btnArch').onclick=function(){AC.arch.toggle();};$('btnStreet').onclick=function(){AC.H.act.street();};
  $('btn3d').onclick=function(){if(!AC.v3d.webgl())return toast('WebGL is not available on this device; using 2.5D.');var on=!AC.v3d.active();S.r3d=on?'on':'off';AC.saveSettings();$('sel3d').value=S.r3d;AC.v3d.setOn(on);setTimeout(upd3d,300);this.textContent=on?'2.5D':'3D';toast(on?'3D view (drag to rotate, right-drag/two fingers to pan)':'2.5D view');};
  $('sel3d').value=S.r3d||'auto';$('sel3d').onchange=function(){S.r3d=this.value;AC.saveSettings();AC.v3d.setOn(AC.v3d.wanted());setTimeout(upd3d,300);};
  $('side').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='aiQ'){AC.H.act.ask(G);render();}});
