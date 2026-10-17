@@ -93,3 +93,17 @@ body.v3d.space #map3d,body.v3d.galaxy #map3d{display:none}body.v3d.space #map,bo
 body.galaxy #tileInfo{display:none}
 .book{max-width:720px}.book pre{white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5;max-height:60vh;overflow:auto;background:rgba(0,0,0,.25);padding:10px;border-radius:10px}
 .spark{vertical-align:middle}#aiQ,#corpName{background:#14183f;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;font:inherit;font-size:13px}
+/* construction */
+.pbar{height:6px;background:rgba(0,0,0,.4);border-radius:3px;margin:4px 0;overflow:hidden}.pbar i{display:block;height:100%;background:linear-gradient(90deg,#e8b23a,#ffe9a0)}
+/* street view */
+#streetHud{display:none;position:absolute;inset:0;pointer-events:none;z-index:5}body.street #streetHud{display:block}body.street #mapCtl,body.street #tileInfo{display:none}
+#streetHud>*{pointer-events:auto}#stBanner{position:absolute;top:18%;left:50%;transform:translateX(-50%);font:600 30px Georgia,serif;color:#fff3c8;text-shadow:0 0 18px #c9a0ff,0 2px 4px #000;opacity:0;pointer-events:none;white-space:nowrap;letter-spacing:2px}
+#stBanner.show{animation:ban 3.2s ease}@keyframes ban{0%{opacity:0;transform:translate(-50%,10px)}15%,70%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+#stMini{position:absolute;top:10px;right:10px;border:2px solid rgba(255,215,106,.7);border-radius:8px;background:#000}
+#stHint{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:#fff;text-shadow:0 1px 3px #000;font-size:14px;pointer-events:none}
+#stPanel{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:340px;background:rgba(15,18,50,.92);border:1px solid var(--line);border-radius:14px;padding:12px;color:#fff}
+#stBtns{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap}
+#stJoy{position:absolute;left:24px;bottom:24px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);touch-action:none;display:none}
+#stJoy i{position:absolute;left:35px;top:35px;width:40px;height:40px;border-radius:50%;background:rgba(255,215,106,.8)}
+#stTouch{position:absolute;right:20px;bottom:24px;display:none;gap:8px}#stTouch button{width:58px;height:58px;border-radius:50%;font-weight:bold}
+@media (pointer:coarse){#stJoy{display:block}#stTouch{display:flex}}

@@ -59,7 +59,7 @@ function tick(){
  if(!G)return;
  G.day++;var R=G.res,net={},hasCap=(G.counts.capital||0)>0;
  function add(k,v){R[k]=(R[k]||0)+v;net[k]=(net[k]||0)+v;if(v>0)G.made[k]=(G.made[k]||0)+v;}
- var list=[];G.tiles.forEach(function(c,i){if(c.b&&c.b!=='road')list.push(i);});
+ var list=[],done=[];G.tiles.forEach(function(c,i){if(c.con){if(--c.con.left<=0)done.push(i);return;}if(c.b&&c.b!=='road')list.push(i);});done.forEach(complete);
  // producers without inputs first, then converters
  list.sort(function(a,b){return (BY[G.tiles[a].b].cons?1:0)-(BY[G.tiles[b].b].cons?1:0);});
  var happyBonus=0,taxMult=0,growth=0,idle=0;
@@ -101,7 +101,7 @@ function tick(){
  if(G.day%5===0)advise();
  render();
 }
-function housing(){var s=G.baseHousing;G.tiles.forEach(function(c){if(c.b&&BY[c.b].housing)s+=BY[c.b].housing;});return s;}
+function housing(){var s=G.baseHousing;G.tiles.forEach(function(c){if(c.b&&!c.con&&BY[c.b].housing)s+=BY[c.b].housing;});return s;}
 
 function checkMissions(){AC.MISSIONS.forEach(function(m){if(G.missions[m.id])return;if(m.check(G)){G.missions[m.id]=true;
  for(var k in m.reward)G.res[k]+=m.reward[k];toast('Mission complete: '+m.n+' (+'+Object.keys(m.reward).map(function(k){return fmt(m.reward[k])+' '+AC.RES[k].n;}).join(', ')+')');
@@ -114,18 +114,28 @@ function placeError(b,i){var c=G.tiles[i];
  if(b.id!=='capital'&&b.id!=='road'&&!G.counts.capital)return 'Build the Capital Hall first.';
  if(c.b)return 'Tile already occupied.';
  if(b.on.indexOf(c.t)<0)return b.n+' cannot be built on '+AC.TERRAIN[c.t].n+'.';
- if(b.unique&&G.counts[b.id])return 'Only one '+b.n+' allowed.';
+ if(b.unique&&(G.counts[b.id]||G.tiles.some(function(t){return t.con&&t.b===b.id;})))return 'Only one '+b.n+' allowed.';
  if(b.near==='water'&&!neighbors(i).some(function(n){var t=G.tiles[n].t;return t==='ocean'||t==='shallow';}))return 'Must be next to water.';
  if(b.id==='outpost'&&!c.ruin)return 'Explorer Outposts must be built on ruins (◈).';
  if(!canAfford(b.cost))return 'Not enough resources.';
  return null;}
-function build(id,i){var b=BY[id],err=placeError(b,i);if(err){toast(err);return false;}
- for(var k in b.cost)G.res[k]-=b.cost[k];G.tiles[i].b=id;AC.art.place(i,W);fxBusy=true;if(AC.audio)AC.audio.sfx(id==='road'?'click':'build');G.counts[id]=(G.counts[id]||0)+1;
+/* construction timers: days scale with building size (cost) */
+function conDays(b){if(b.id==='road')return 0;var v=0;for(var k in b.cost)v+=b.cost[k]*(k==='credits'?1:30);return Math.max(2,Math.min(40,Math.round(Math.sqrt(v)/12)));}
+function rushCost(c){return Math.max(5,Math.ceil(c.con.left*4));}
+function complete(i){var c=G.tiles[i],id=c.b;if(!c.con)return;delete c.con;G.counts[id]=(G.counts[id]||0)+1;AC.art.place(i,W);fxBusy=true;if(AC.audio)AC.audio.sfx('success');
  if(id==='outpost'){G.tiles[i].ruin=false;G.ruinsFound++;var rw=[{credits:5000},{research:40},{crystal:15,light:20},{titanium:40}][G.ruinsFound%4];
+  for(var k2 in rw)G.res[k2]+=rw[k2];toast('Ruins excavated! Ancient Aethari relics found: '+Object.keys(rw).map(function(k){return rw[k]+' '+AC.RES[k].n;}).join(', '));}
+ else toast(BY[id].n+' construction complete!');checkMissions();}
+function rush(i){var c=G.tiles[i];if(!c||!c.con)return;var n=rushCost(c);if((G.res.light||0)<n){toast('Speeding up needs '+n+' Celestial Light.');return;}G.res.light-=n;complete(i);render();}
+function build(id,i){var b=BY[id],err=placeError(b,i);if(err){toast(err);return false;}
+ for(var k in b.cost)G.res[k]-=b.cost[k];G.tiles[i].b=id;AC.art.place(i,W);fxBusy=true;if(AC.audio)AC.audio.sfx(id==='road'?'click':'build');
+ var d=conDays(b);if(d>0&&!G.instantBuild){G.tiles[i].con={tot:d,left:d};toast(b.n+': construction started ('+d+' days).');}else{G.counts[id]=(G.counts[id]||0)+1;}
+ if(id==='outpost'&&!G.tiles[i].con){G.tiles[i].con={tot:0,left:0};complete(i);}
+ if(false){G.tiles[i].ruin=false;G.ruinsFound++;var rw=[{credits:5000},{research:40},{crystal:15,light:20},{titanium:40}][G.ruinsFound%4];
   for(var k2 in rw)G.res[k2]+=rw[k2];toast('Ruins excavated! Ancient Aethari relics found: '+Object.keys(rw).map(function(k){return rw[k]+' '+AC.RES[k].n;}).join(', '));}
  if(b.unique){sel=null;}
  checkMissions();render();return true;}
-function demolish(i){var c=G.tiles[i];if(!c.b)return;var b=BY[c.b];G.counts[c.b]--;c.b=null;
+function demolish(i){var c=G.tiles[i];if(!c.b)return;var b=BY[c.b];if(c.con)delete c.con;else G.counts[c.b]--;c.b=null;
  for(var k in b.cost)G.res[k]+=Math.floor(b.cost[k]*0.5);toast(b.n+' demolished (50% refunded).');render();}
 function trade(k,qty){ // qty>0 sell, <0 buy
  if(qty>0){if(G.res[k]<qty){toast('Not enough '+AC.RES[k].n);return;}if(!G.counts.capital){toast('Build the Capital Hall first.');return;}
@@ -189,9 +199,12 @@ function costStr(c){return Object.keys(c).map(function(k){return '<span class="c
 var tab='build';
 function panels(){
  if(tab==='build'){var h='<p class="small">Select a structure, then tap the map. Tap again to deselect. Tap a building with nothing selected to inspect it.</p>',cat='';
+  var cons=[];G.tiles.forEach(function(c,i){if(c.con)cons.push(i);});
+  if(cons.length){h+='<div class="small" style="color:#ffd76a">Under construction ('+cons.length+')</div>';cons.slice(0,8).forEach(function(i){var c=G.tiles[i],p=Math.round((1-c.con.left/c.con.tot)*100);
+   h+='<div class="card con"><span class="t">'+BY[c.b].n+'</span> <small>'+c.con.left+' days left</small><div class="pbar"><i style="width:'+p+'%"></i></div><button class="mini" data-act="rush" data-arg="'+i+'">✦ Speed up ('+rushCost(c)+' Light)</button>'+(AC.store&&AC.store.CONFIG.PAID_SPEEDUP?'<button class="mini" data-act="paidRush" data-arg="'+i+'">⚡ Instant</button>':'')+'</div>';});}
   AC.BUILDINGS.forEach(function(b){if(b.cat!==cat){cat=b.cat;h+='<div class="small" style="margin-top:6px;color:#ffd76a">'+cat+'</div>';}
    var locked=b.req&&!G.tech[b.req];
-   h+='<div class="card bcard'+(sel===b.id?' sel':'')+(locked?' locked':'')+'" data-b="'+b.id+'"><img class="thumb" alt="" src="'+(b.id==='road'?ROADIMG:thumb(b.id))+'"><span class="t">'+b.n+'</span> <small>('+(G.counts[b.id]||0)+')</small><br><span class="c">'+costStr(b.cost)+'</span> '+(locked?'🔒 '+b.req:'')+'<br><span class="e">'+b.d+'</span></div>';});
+   h+='<div class="card bcard'+(sel===b.id?' sel':'')+(locked?' locked':'')+'" data-b="'+b.id+'"><img class="thumb" alt="" src="'+(b.id==='road'?ROADIMG:thumb(b.id))+'"><span class="t">'+b.n+'</span> <small>('+(G.counts[b.id]||0)+')'+(conDays(b)?' · ⏱'+conDays(b)+'d':'')+'</small><br><span class="c">'+costStr(b.cost)+'</span> '+(locked?'🔒 '+b.req:'')+'<br><span class="e">'+b.d+'</span></div>';});
   $('tab-build').innerHTML=h;}
  if(tab==='market'){var m='<p class="small">Prices move with supply and demand. Selling floods the market and lowers the price; it recovers over time. Buying costs 20% more. Bonus from Trade Markets: x'+sellBonus().toFixed(1)+'</p>';
   for(var k in AC.MARKET){m+='<div class="row"><span>'+IC[k]+' '+AC.RES[k].n+'<br><small>'+fmt(G.res[k])+' owned · '+price(k).toFixed(1)+' ₵</small></span><span>'+
@@ -221,7 +234,7 @@ function startLoop(){stopLoop();timer=setInterval(function(){if(!paused)for(var 
 function stopLoop(){if(timer)clearInterval(timer);timer=null;}
 var hover=null;
 function tileAt(e){var p=AC.render.toWorld(e.clientX,e.clientY),x=Math.floor(p.x/TS),y=Math.floor(p.y/TS);return (x>=0&&y>=0&&x<W&&y<H)?y*W+x:null;}
-function info(i){var c=G.tiles[i],s=AC.TERRAIN[c.t].n+(c.dep?' · iron deposit':'')+(c.ruin?' · ancient ruins':'');if(c.b)s+=' · '+BY[c.b].n+(c.idle?' (idle)':'');$('tileInfo').textContent=s;}
+function info(i){var c=G.tiles[i],s=AC.TERRAIN[c.t].n+(c.dep?' · iron deposit':'')+(c.ruin?' · ancient ruins':'');if(c.b)s+=' · '+BY[c.b].n+(c.con?' (under construction, '+c.con.left+' days left)':c.idle?' (idle)':'');if(AC.districts)s+=' · '+AC.districts.name(i);$('tileInfo').textContent=s;}
 var starData=null;
 function stars(){var c=$('stars');c.width=innerWidth;c.height=innerHeight;var r=rng(7),n=Math.min(420,(c.width*c.height/3500)|0);starData=[];
  for(var i=0;i<n;i++)starData.push({x:r()*c.width,y:r()*c.height,s:r()*1.9+0.4,p:r()*6.28,v:0.5+r()*2,c:r()<0.15?'#bcd4ff':r()<0.3?'#ffe6a8':'#ffffff'});}
@@ -266,7 +279,7 @@ function focusCity(){requestAnimationFrame(function(){if(!G)return;AC.render.res
  if(i<0){var best=-1,bd=1e9;G.tiles.forEach(function(c,j){if(c.t!=='plains')return;var d=Math.abs(j%W-W/2)+Math.abs((j/W|0)-H/2);if(d<bd){bd=d;best=j;}});i=best;}
  AC.render.focus((i%W+.5)*TS,((i/W|0)+.5)*TS);if(AC.v3d&&AC.v3d.ready())AC.v3d.focus(i);});}
 function tileClick(i){if(i==null||!G)return;hover=i;info(i);
- if(sel)build(sel,i);else if(G.tiles[i].b){var b=BY[G.tiles[i].b];if(confirm(b.n+'\n'+b.d+'\n\nDemolish it for a 50% refund?'))demolish(i);}}
+ if(sel)build(sel,i);else if(G.tiles[i].con){var cb=BY[G.tiles[i].b];if(confirm(cb.n+' is under construction: '+G.tiles[i].con.left+' days left.\n\nSpeed up now for '+rushCost(G.tiles[i])+' Celestial Light?'))rush(i);}else if(G.tiles[i].b){var b=BY[G.tiles[i].b];if(confirm(b.n+'\n'+b.d+'\n\nDemolish it for a 50% refund?'))demolish(i);}}
 function switchTab(t){tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});document.querySelectorAll('.tab').forEach(function(d){d.classList.toggle('on',d.id==='tab-'+t);});render();}
 AC.H.act.tab=function(a,b){switchTab(typeof a==='string'?a:b);};
 function setupExtras(){var S=AC.settings;
@@ -286,7 +299,7 @@ function setupExtras(){var S=AC.settings;
  $('btnMute').textContent=S.muted?'🔇':'🔊';
  $('btnMute').onclick=function(){S.muted=!S.muted;AC.saveSettings();AC.audio.apply();this.textContent=S.muted?'🔇':'🔊';$('chkMute').checked=S.muted;};
  $('btnZoomIn').onclick=function(){AC.render.zoom(1.3);};$('btnZoomOut').onclick=function(){AC.render.zoom(1/1.3);};$('btnFit').onclick=function(){AC.render.fitView();};
- $('btnSpaceView').onclick=function(){if(AC.galaxy.active())AC.galaxy.toggle();AC.space.toggle();};$('btnGalaxy').onclick=function(){AC.galaxy.toggle();};
+ $('btnSpaceView').onclick=function(){if(AC.galaxy.active())AC.galaxy.toggle();AC.space.toggle();};$('btnGalaxy').onclick=function(){if(AC.street.active())AC.street.exit();AC.galaxy.toggle();};$('btnStreet').onclick=function(){AC.H.act.street();};
  $('btn3d').onclick=function(){if(!AC.v3d.webgl())return toast('WebGL is not available on this device; using 2.5D.');var on=!AC.v3d.active();S.r3d=on?'on':'off';AC.saveSettings();$('sel3d').value=S.r3d;AC.v3d.setOn(on);setTimeout(upd3d,300);this.textContent=on?'2.5D':'3D';toast(on?'3D view (drag to rotate, right-drag/two fingers to pan)':'2.5D view');};
  $('sel3d').value=S.r3d||'auto';$('sel3d').onchange=function(){S.r3d=this.value;AC.saveSettings();AC.v3d.setOn(AC.v3d.wanted());setTimeout(upd3d,300);};
  $('side').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='aiQ'){AC.H.act.ask(G);render();}});
@@ -295,6 +308,6 @@ function setupExtras(){var S=AC.settings;
  setInterval(function(){var c=$('clock');if(c&&G)c.textContent=AC.space.active()?'Helion System':'Elysia '+AC.render.timeLabel();},1000);
  if(AC.store&&AC.store.owns('founder'))$('title').querySelector('.title-box').insertAdjacentHTML('beforeend','<p class="badge">✦ Founder ✦</p>');}
 // Public hooks (used by tests and future phases)
-AC.api={tileClick:function(i){tileClick(i);},hoverTile:function(i){hover=i;if(i!=null)info(i);},canPlace:function(i){return sel?!placeError(BY[sel],i):null;},focusCity:focusCity,switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
+AC.H.act.rush=function(g,i){rush(+i);};AC.api={conDays:conDays,complete:function(i){complete(i);},rush:rush,rushCost:rushCost,finishAll:function(){G.tiles.forEach(function(c,i){if(c.con)complete(i);});},tileClick:function(i){tileClick(i);},hoverTile:function(i){hover=i;if(i!=null)info(i);},canPlace:function(i){return sel?!placeError(BY[sel],i):null;},focusCity:focusCity,switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
 document.addEventListener('DOMContentLoaded',init);
 })();

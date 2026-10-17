@@ -96,6 +96,17 @@ function chunks(ctx,G,W,H,vis){var q=lvl();if(q<=(S.res||1))return;var cs=Math.m
   if(c)ctx.drawImage(c,cx*cs*T,cy*cs*T,c._w*T,c._h*T);}
  if(made)moveT=Math.max(moveT,performance.now()-150);}
 /* ---------- buildings, roads, ruins and walking figures drawn per frame (crisp at any zoom) ---------- */
+/* building, or construction site with scaffolding + countdown bar */
+function drawB(ctx,c,q,x,y,w,h,t){var spr=AC.art.sprite(c.b,q);if(!c.con)return ctx.drawImage(spr,x,y,w,h);
+ var f=c.con.tot?1-c.con.left/c.con.tot:1,sw=spr.width,sh=spr.height,rf=0.12+0.88*f;
+ ctx.globalAlpha=0.22;ctx.drawImage(spr,x,y,w,h);ctx.globalAlpha=1;ctx.drawImage(spr,0,sh*(1-rf),sw,sh*rf,x,y+h*(1-rf),w,h*rf);
+ var x0=x+w*0.14,x1=x+w*0.86,y0=y+h*0.2,y1=y+h*0.95;ctx.strokeStyle='rgba(150,105,50,.95)';ctx.lineWidth=Math.max(0.5,w/40);ctx.beginPath();
+ for(var k=0;k<=3;k++){var xx=x0+(x1-x0)*k/3;ctx.moveTo(xx,y0);ctx.lineTo(xx,y1);}for(k=0;k<=3;k++){var yy=y0+(y1-y0)*k/3;ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);}
+ ctx.moveTo(x0,y1);ctx.lineTo(x1,y0);ctx.stroke();
+ // crane
+ ctx.strokeStyle='#e8b23a';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1,y-h*0.05);ctx.lineTo(x0-w*0.05,y-h*0.05);ctx.moveTo(x0+w*0.1+Math.sin(t)*w*0.1,y-h*0.05);ctx.lineTo(x0+w*0.1+Math.sin(t)*w*0.1,y0);ctx.stroke();
+ var bw=w*0.8,bx=x+w*0.1,by=y-h*0.2,bh=Math.max(2.5,h/9);ctx.fillStyle='rgba(10,12,40,.85)';ctx.fillRect(bx-1,by-1,bw+2,bh+2);ctx.fillStyle='#ffd76a';ctx.fillRect(bx,by,bw*f,bh);
+ ctx.font='bold '+Math.max(4,h/6)+'px sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.8)';ctx.lineWidth=Math.max(0.6,h/40);ctx.strokeText('⏱ '+c.con.left+'d',x+w/2,by-bh*0.3);ctx.fillText('⏱ '+c.con.left+'d',x+w/2,by-bh*0.3);}
 function objects(ctx,G,W,H,layers,vis,now){var T=32,iso=V.mode==='iso',m=M(),Z=V.z,t=now/1000,q=Math.min(8,lvl()*(iso?2:1)),inV=function(i){var x=i%W,y=(i/W)|0;return x>=vis.x0&&x<=vis.x1&&y>=vis.y0&&y<=vis.y1;};
  ctx.setTransform(m[0]*Z,m[1]*Z,m[2]*Z,m[3]*Z,V.ox,V.oy);
  // roads on the ground
@@ -109,8 +120,8 @@ function objects(ctx,G,W,H,layers,vis,now){var T=32,iso=V.mode==='iso',m=M(),Z=V
  var S2=iso?1.25:1;
  list.forEach(function(i){var c=G.tiles[i],X=(i%W)*T,Y=((i/W)|0)*T;
   if(iso){var p=toScreen(X+16,Y+16);ctx.setTransform(Z,0,0,Z,p.x,p.y);ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(4,2,15,6,0,0,7);ctx.fill();
-   if(c.b)ctx.drawImage(AC.art.sprite(c.b,q),-16*S2,-27*S2,T*S2,T*S2);else{ctx.translate(-16*S2,-27*S2);ctx.scale(S2,S2);AC.art.ruin(ctx,0,0);}}
-  else{ctx.setTransform(Z,0,0,Z,V.ox+X*Z,V.oy+Y*Z);if(c.b)ctx.drawImage(AC.art.sprite(c.b,q),0,0,T,T);else AC.art.ruin(ctx,0,0);}});
+   if(c.b)drawB(ctx,c,q,-16*S2,-27*S2,T*S2,T*S2,t);else{ctx.translate(-16*S2,-27*S2);ctx.scale(S2,S2);AC.art.ruin(ctx,0,0);}}
+  else{ctx.setTransform(Z,0,0,Z,V.ox+X*Z,V.oy+Y*Z);if(c.b)drawB(ctx,c,q,0,0,T,T,t);else AC.art.ruin(ctx,0,0);}});
  // tiny Angelic Human figures walking the roads and around buildings (close zoom)
  if(Z>=1.6){var walk=[];layers.roads.forEach(function(i){if(inV(i))walk.push(i);});var n=0;
   walk.forEach(function(i){for(var w=0;w<2;w++){var h=AC.art.hash(i,w,21),ph=(t*0.12*(0.6+h)+h*7)%1,horiz=AC.art.hash(i,w,22)<0.5,dir=AC.art.hash(i,w,23)<0.5?1:-1,o=(AC.art.hash(i,w,24)-0.5)*5;

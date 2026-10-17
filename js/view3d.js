@@ -22,15 +22,15 @@ function init(){T=window.THREE;var wrap=document.getElementById('mapWrap');cvs=d
  hemi=new T.HemisphereLight(0xcfe6ff,0x40502a,0.9);scene.add(hemi);
  sun=new T.DirectionalLight(0xfff1d0,2.2);sun.castShadow=true;var sz=S.q==='high'?2048:1024;sun.shadow.mapSize.set(sz,sz);var sc=sun.shadow.camera;sc.left=-30;sc.right=30;sc.top=30;sc.bottom=-30;sc.near=1;sc.far=120;sun.shadow.bias=-0.0008;scene.add(sun);scene.add(sun.target);
  var m=new T.Mesh(new T.RingGeometry(0.42,0.5,4,1,Math.PI/4),new T.MeshBasicMaterial({color:0xffe08a,transparent:true,opacity:0.9,depthTest:false}));m.rotation.x=-Math.PI/2;m.renderOrder=9;hoverMesh=m;scene.add(m);
- cvs.addEventListener('pointerdown',function(e){ptr[e.pointerId]={x:e.clientX,y:e.clientY};dragged=false;drag={x:e.clientX,y:e.clientY,b:e.button,pd:null,yaw:cam.yaw,pitch:cam.pitch,tx:cam.tx,tz:cam.tz};cvs.setPointerCapture&&cvs.setPointerCapture(e.pointerId);});
- cvs.addEventListener('pointermove',function(e){if(!ptr[e.pointerId]){var i=pick(e);if(i!==hover){hover=i;if(AC.api.hoverTile)AC.api.hoverTile(i);}return;}ptr[e.pointerId]={x:e.clientX,y:e.clientY};var ids=Object.keys(ptr);
+ cvs.addEventListener('pointerdown',function(e){if(AC.street&&AC.street.active())return;ptr[e.pointerId]={x:e.clientX,y:e.clientY};dragged=false;drag={x:e.clientX,y:e.clientY,b:e.button,pd:null,yaw:cam.yaw,pitch:cam.pitch,tx:cam.tx,tz:cam.tz};cvs.setPointerCapture&&cvs.setPointerCapture(e.pointerId);});
+ cvs.addEventListener('pointermove',function(e){if(AC.street&&AC.street.active())return;if(!ptr[e.pointerId]){var i=pick(e);if(i!==hover){hover=i;if(AC.api.hoverTile)AC.api.hoverTile(i);}return;}ptr[e.pointerId]={x:e.clientX,y:e.clientY};var ids=Object.keys(ptr);
   if(ids.length===2){var a=ptr[ids[0]],b=ptr[ids[1]],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;if(drag.pd){cam.dist=Math.max(4,Math.min(60,cam.dist*drag.pd/d));pan(mx-drag.mx,my-drag.my);}drag.pd=d;drag.mx=mx;drag.my=my;dragged=true;return;}
   var dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>6)dragged=true;if(!dragged)return;
   if(drag.b===2||e.shiftKey||drag.b===1){cam.tx=drag.tx;cam.tz=drag.tz;pan(dx,dy);}else{cam.yaw=drag.yaw-dx*0.006;cam.pitch=Math.max(0.25,Math.min(1.45,drag.pitch+dy*0.005));}});
  function up(e){delete ptr[e.pointerId];if(!Object.keys(ptr).length)drag=null;else if(drag)drag.pd=null;}
  cvs.addEventListener('pointerup',up);cvs.addEventListener('pointercancel',up);cvs.addEventListener('contextmenu',function(e){e.preventDefault();});
- cvs.addEventListener('wheel',function(e){e.preventDefault();cam.dist=Math.max(4,Math.min(60,cam.dist*(e.deltaY<0?0.88:1.14)));},{passive:false});
- cvs.addEventListener('click',function(e){if(dragged)return;var i=pick(e);if(i!=null&&AC.api.tileClick)AC.api.tileClick(i);});
+ cvs.addEventListener('wheel',function(e){if(AC.street&&AC.street.active())return;e.preventDefault();cam.dist=Math.max(4,Math.min(60,cam.dist*(e.deltaY<0?0.88:1.14)));},{passive:false});
+ cvs.addEventListener('click',function(e){if(AC.street&&AC.street.active())return;if(dragged)return;var i=pick(e);if(i!=null&&AC.api.tileClick)AC.api.tileClick(i);});
  addEventListener('resize',size);if(window.ResizeObserver)new ResizeObserver(size).observe(wrap);size();}
 function pan(dx,dy){var k=cam.dist/600,c=Math.cos(cam.yaw),s=Math.sin(cam.yaw);cam.tx+=-c*dx*k-s*dy*k;cam.tz+=s*dx*k-c*dy*k;cam.tx=Math.max(-W/2,Math.min(W/2,cam.tx));cam.tz=Math.max(-H/2,Math.min(H/2,cam.tz));}
 function size(){if(!renderer)return;var p=cvs.parentElement,w=p.clientWidth||300,h=p.clientHeight||200;renderer.setSize(w,h,false);cvs.style.width=w+'px';cvs.style.height=h+'px';camera.aspect=w/h;camera.updateProjectionMatrix();}
@@ -84,7 +84,7 @@ function buildMesh(id){var parts=R[id]||R.home,g=new T.Group();parts.forEach(fun
  if(sh===Tor){m.scale.set(p[2],p[2],p[2]);m.geometry=geo(sh+'t');if(!GEO[sh+'t']){GEO[sh+'t']=new T.TorusGeometry(1,0.06,6,28).rotateX(Math.PI/2);m.geometry=GEO[sh+'t'];}}
  else if(sh===C||sh===K||sh===D||sh===Sp)m.scale.set(p[2],p[3],p[4]);else m.scale.set(p[2],p[3],p[4]);
  m.position.set(p[5],p[6],p[7]);if(p[9])m.rotation.z=p[9];if(p[10])m.rotation.x=p[10];if(p[11])m.rotation.x=p[11];if(id==='solar'&&sh===B&&p[3]<.05)m.rotation.x=-0.5;
- m.castShadow=m.receiveShadow=true;g.add(m);});return g;}
+ m.userData.sy=m.scale.y;m.castShadow=m.receiveShadow=true;g.add(m);});return g;}
 
 /* ---------- world ---------- */
 function buildWorld(G){
@@ -116,25 +116,35 @@ function mergeTree(cone,trunk){var g=new T.BufferGeometry(),a=cone.toNonIndexed(
  var p=new Float32Array(pa.length+pb.length),n=new Float32Array(na.length+nb.length),c=new Float32Array(p.length);p.set(pa);p.set(pb,pa.length);n.set(na);n.set(nb,na.length);
  for(var i=0;i<pa.length;i+=3){c[i]=0.22;c[i+1]=0.55;c[i+2]=0.24;}for(;i<p.length;i+=3){c[i]=0.42;c[i+1]=0.29;c[i+2]=0.16;}
  g.setAttribute('position',new T.BufferAttribute(p,3));g.setAttribute('normal',new T.BufferAttribute(n,3));g.setAttribute('color',new T.BufferAttribute(c,3));return g;}
-function sync(G){var sig='';for(var i=0;i<G.tiles.length;i++){var b=G.tiles[i].b;if(b)sig+=i+b;}if(sig===lastSig)return;lastSig=sig;
- var now=performance.now();G.tiles.forEach(function(t,i){var cur=built[i];if(cur&&cur.id===t.b)return;if(cur){(cur.road?roadGroup:bgroup).remove(cur.o);delete built[i];}
+function sync(G){var sig='';for(var i=0;i<G.tiles.length;i++){var b=G.tiles[i].b;if(b)sig+=i+b+(G.tiles[i].con?'c':'');}if(sig===lastSig)return;lastSig=sig;
+ var now=performance.now();G.tiles.forEach(function(t,i){var cur=built[i];if(cur&&cur.id===t.b&&!!cur.con===!!t.con)return;if(cur){(cur.road?roadGroup:bgroup).remove(cur.o);delete built[i];}
   if(!t.b)return;var x=i%W,y=(i/W)|0,h=surface(G,x,y),o;
   if(t.b==='road'){o=new T.Group();var mk=function(dx,dz){var len=0.5,m=new T.Mesh(geo(B),MAT.road);m.scale.set(dx?len:0.32,0.03,dz?len:0.32);m.position.set(dx*0.25,0,dz*0.25);m.receiveShadow=true;o.add(m);};
    mk(0,0);[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var nx=x+d[0],ny=y+d[1];if(nx>=0&&ny>=0&&nx<W&&ny<H&&G.tiles[ny*W+nx].b)mk(d[0],d[1]);});o.position.set(x+0.5-W/2,h,y+0.5-H/2);roadGroup.add(o);built[i]={id:t.b,o:o,road:1};return;}
-  o=buildMesh(t.b);o.position.set(x+0.5-W/2,h,y+0.5-H/2);o.rotation.y=Math.round(hsh(i,1,50)*4)*Math.PI/2*0+(hsh(i,1,50)<0.5?0:Math.PI/2)*0;bgroup.add(o);built[i]={id:t.b,o:o};if(G0&&G0.day>0)spawn[i]=now;});
+  o=buildMesh(t.b);o.position.set(x+0.5-W/2,h,y+0.5-H/2);o.rotation.y=Math.round(hsh(i,1,50)*4)*Math.PI/2*0+(hsh(i,1,50)<0.5?0:Math.PI/2)*0;bgroup.add(o);built[i]={id:t.b,o:o};if(t.con){var sc=scaffold();o.add(sc.g);built[i].con=sc;}if(G0&&G0.day>0)spawn[i]=now;});
  // neighbouring roads must reconnect
  G.tiles.forEach(function(t,i){if(t.b==='road'&&built[i]&&!built[i].fresh){}});
  Object.keys(built).forEach(function(i){if(built[i].road){roadGroup.remove(built[i].o);delete built[i];}});G.tiles.forEach(function(t,i){if(t.b==='road'){lastSig='';}});
  if(!lastSig){lastSig=sig;G.tiles.forEach(function(t,i){if(t.b!=='road')return;var x=i%W,y=(i/W)|0,h=surface(G,x,y),o=new T.Group();var mk=function(dx,dz){var m=new T.Mesh(geo(B),MAT.road);m.scale.set(dx?0.5:0.32,0.03,dz?0.5:0.32);m.position.set(dx*0.25,0,dz*0.25);m.receiveShadow=true;o.add(m);};
   mk(0,0);[[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){var nx=x+d[0],ny=y+d[1];if(nx>=0&&ny>=0&&nx<W&&ny<H&&G.tiles[ny*W+nx].b)mk(d[0],d[1]);});o.position.set(x+0.5-W/2,h,y+0.5-H/2);roadGroup.add(o);built[i]={id:'road',o:o,road:1};});}}
+function scaffold(){var g=new T.Group(),pm=MAT.scaf||(MAT.scaf=new T.MeshStandardMaterial({color:0xa06a30,roughness:0.8})),bg=geo(B);
+ [[-.4,-.4],[.4,-.4],[-.4,.4],[.4,.4]].forEach(function(p){var m=new T.Mesh(bg,pm);m.scale.set(.025,.75,.025);m.position.set(p[0],0,p[1]);m.castShadow=true;g.add(m);});
+ [.25,.5,.75].forEach(function(y){[[0,-.4,.82,.02],[0,.4,.82,.02],[-.4,0,.02,.82],[.4,0,.02,.82]].forEach(function(p){var m=new T.Mesh(bg,pm);m.scale.set(p[2],.02,p[3]);m.position.set(p[0],y,p[1]);g.add(m);});});
+ var crane=new T.Group(),cm=MAT.crane||(MAT.crane=new T.MeshStandardMaterial({color:0xf0b830,roughness:0.5,metalness:0.3}));var mast=new T.Mesh(bg,cm);mast.scale.set(.04,1.1,.04);crane.add(mast);var jib=new T.Mesh(bg,cm);jib.scale.set(.7,.03,.03);jib.position.set(.25,1.1,0);crane.add(jib);crane.position.set(.42,0,.42);g.add(crane);
+ var cv=document.createElement('canvas');cv.width=128;cv.height=40;var tex=new T.CanvasTexture(cv);tex.colorSpace=T.SRGBColorSpace;var sp=new T.Sprite(new T.SpriteMaterial({map:tex,depthTest:false,transparent:true}));sp.scale.set(0.9,0.28,1);sp.position.y=1.45;sp.renderOrder=10;g.add(sp);
+ g.userData.isScaf=true;return {g:g,cv:cv,tex:tex,crane:crane,left:-1};}
+function drawBar(s,f,left){var x=s.cv.getContext('2d');x.clearRect(0,0,128,40);x.fillStyle='rgba(10,12,40,.85)';x.fillRect(4,22,120,14);x.fillStyle='#ffd76a';x.fillRect(6,24,116*f,10);
+ x.font='bold 18px sans-serif';x.textAlign='center';x.fillStyle='#fff';x.strokeStyle='#000';x.lineWidth=3;x.strokeText('⏱ '+left+' days',64,18);x.fillText('⏱ '+left+' days',64,18);s.tex.needsUpdate=true;}
 function tod(now){return S.daynight?((now/1000/160)+0.3)%1:0.35;}
 var m4b=null,qb=null,sb=null,pb=null,last=0;
 function frame(now){var G=AC.api.state();if(!G)return;if(G.tiles!==(G0&&G0.tiles)){buildWorld(G);}sync(G);
  var t=now/1000,td=tod(now),el=Math.sin(td*6.2832),day=Math.max(0,Math.min(1,0.45+el*0.9)),night=1-day;
  // camera
- var cx=cam.tx+Math.sin(cam.yaw)*Math.cos(cam.pitch)*cam.dist,cz=cam.tz+Math.cos(cam.yaw)*Math.cos(cam.pitch)*cam.dist,cy=Math.sin(cam.pitch)*cam.dist+0.3;camera.position.set(cx,cy,cz);camera.lookAt(cam.tx,0.2,cam.tz);
+ var street=AC.street&&AC.street.active(),sc=sun.shadow.camera,ext=street?4:30;if(sc.right!==ext){sc.left=sc.bottom=-ext;sc.right=sc.top=ext;sc.updateProjectionMatrix();}
+ if(street){AC.street.update(now,camera);cam.tx=camera.userData.fx;cam.tz=camera.userData.fz;camera.near=0.01;scene.fog.near=3;scene.fog.far=28;}else{camera.near=0.1;scene.fog.near=30;scene.fog.far=90;
+ var cx=cam.tx+Math.sin(cam.yaw)*Math.cos(cam.pitch)*cam.dist,cz=cam.tz+Math.cos(cam.yaw)*Math.cos(cam.pitch)*cam.dist,cy=Math.sin(cam.pitch)*cam.dist+0.3;camera.position.set(cx,cy,cz);camera.lookAt(cam.tx,0.2,cam.tz);}camera.updateProjectionMatrix();
  // sun & sky
- var az=td*6.2832;sun.position.set(cam.tx+Math.cos(az)*30,Math.max(4,el*40),cam.tz+Math.sin(az)*12+10);sun.target.position.set(cam.tx,0,cam.tz);sun.intensity=0.25+2.2*day;
+ var az=td*6.2832,sk=street?0.15:1;sun.position.set(cam.tx+Math.cos(az)*30*sk,Math.max(4,el*40)*sk,cam.tz+(Math.sin(az)*12+10)*sk);sun.target.position.set(cam.tx,0,cam.tz);sun.intensity=0.25+2.2*day;
  sun.color.setRGB(1,0.8+0.2*day,0.6+0.4*day);hemi.intensity=0.25+0.75*day;var sky=new T.Color(0x0b1235).lerp(new T.Color(0x9fc8ff),day);if(day<0.6&&day>0.15)sky.lerp(new T.Color(0xffa070),0.35*(1-Math.abs(day-0.4)*4));
  scene.background=sky;scene.fog.color.copy(sky);
  MAT.glass.emissive.setRGB(1,0.85,0.5);MAT.glass.emissiveIntensity=night*0.9;MAT.gold.emissive.setRGB(0.4,0.3,0.05);MAT.gold.emissiveIntensity=0.15+night*0.4;
@@ -143,18 +153,22 @@ function frame(now){var G=AC.api.state();if(!G)return;if(G.tiles!==(G0&&G0.tiles
  // placement animation
  Object.keys(spawn).forEach(function(i){var e=(now-spawn[i])/600,o=built[i]&&built[i].o;if(!o||e>1){if(o)o.scale.set(1,1,1);delete spawn[i];return;}var s=e<1?(1-Math.pow(1-e,3))*1.08:1;o.scale.set(1,s,1);});
  // walking figures
- m4b=m4b||new T.Matrix4();qb=qb||new T.Quaternion();sb=sb||new T.Vector3(1,1,1);pb=pb||new T.Vector3();var n=0;
- if(cam.dist<30)Object.keys(built).forEach(function(k){if(n>=300)return;var i=+k,x=i%W,y=(i/W)|0,road=built[k].road;for(var w=0;w<(road?2:1);w++){var h=hsh(i,w,60);if(!road&&h>0.6)continue;
+ m4b=m4b||new T.Matrix4();qb=qb||new T.Quaternion();sb=sb||new T.Vector3(1,1,1);var ps=street?0.4:1;sb.set(ps,ps,ps);pb=pb||new T.Vector3();var n=0;
+ if(street||cam.dist<30)Object.keys(built).forEach(function(k){if(n>=300)return;var i=+k,x=i%W,y=(i/W)|0,road=built[k].road;for(var w=0;w<(road?2:1);w++){var h=hsh(i,w,60);if(!road&&h>0.6)continue;
    var ph=(t*0.12*(0.6+h)+h*7)%1,fx,fz;if(road){var hor=hsh(i,w,61)<0.5;fx=x+(hor?ph:0.5+(h-0.5)*0.2);fz=y+(hor?0.5+(h-0.5)*0.2:ph);}else{var a=t*0.3*(h+0.4)+h*6;fx=x+0.5+Math.cos(a)*0.55;fz=y+0.5+Math.sin(a)*0.5;}
    pb.set(fx-W/2,hAt(G,fx,fz)+0.03+Math.abs(Math.sin(t*6+h*9))*0.01,fz-H/2);m4b.compose(pb,qb,sb);people.setMatrixAt(n++,m4b);}});
  people.count=n;people.instanceMatrix.needsUpdate=true;
+ // construction sites: rising building, scaffolding and countdown bar
+ Object.keys(built).forEach(function(k){var b=built[k],c=G.tiles[k];if(!b.con||!c.con)return;var f=c.con.tot?1-c.con.left/c.con.tot:1;b.o.children.forEach(function(ch){if(ch!==b.con.g)ch.scale.y=ch.userData.sy*(0.08+0.92*f);});
+  if(b.con.left!==c.con.left){b.con.left=c.con.left;drawBar(b.con,f,c.con.left);}b.con.crane.rotation.y=t*0.4;});
+ if(street)hover=null;
  if(hover!=null){var hx=hover%W,hy=(hover/W)|0;hoverMesh.visible=true;hoverMesh.position.set(hx+0.5-W/2,surface(G,hx,hy)+0.06,hy+0.5-H/2);hoverMesh.material.color.setHex(AC.api.canPlace&&AC.api.canPlace(hover)===false?0xff5050:0xffe08a);}else hoverMesh.visible=false;
  renderer.render(scene,camera);}
 function setOn(v){if(v&&failed){AC.api.toast('3D could not start; using the 2.5D view.');v=false;}
  if(v&&!window.THREE){load(function(){try{mats();init();on=true;document.body.classList.add('v3d');}catch(e){failed=true;on=false;console.warn('3D init failed',e);}});return;}
  if(v&&!renderer){try{mats();init();}catch(e){failed=true;return;}}
  on=v;document.body.classList.toggle('v3d',on);if(on)size();}
-AC.v3d={active:function(){return on&&!!renderer;},frame:frame,setOn:setOn,wanted:wanted,webgl:webgl,pick:pick,cam:cam,
+AC.v3d={ctx:function(){return {T:T,scene:scene,camera:camera,renderer:renderer,cvs:cvs,W:W,H:H,built:built,hAt:function(x,y){return hAt(G0,x,y);},MAT:MAT,geo:geo,B:B};},active:function(){return on&&!!renderer;},frame:frame,setOn:setOn,wanted:wanted,webgl:webgl,pick:pick,cam:cam,
  focus:function(i){cam.tx=i%W+0.5-W/2;cam.tz=((i/W)|0)+0.5-H/2;cam.dist=S.q==='high'?13:10;},wasDrag:function(){return dragged;},ready:function(){return !!renderer;},
  info:function(){return renderer?{calls:renderer.info.render.calls,tris:renderer.info.render.triangles,meshes:bgroup?bgroup.children.length:0}:null;}};
 })();

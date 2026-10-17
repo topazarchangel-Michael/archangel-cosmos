@@ -15,6 +15,7 @@ var CONFIG={
  PAYMENTS_ENABLED:false,
  DEV_UNLOCK_ALL:true,          // keep everything unlocked while payments are disabled (testing)
  PROVIDER:'stripe',            // 'none' | 'stripe' | 'kofi'  (only used when PAYMENTS_ENABLED is true)
+ PAID_SPEEDUP:false,           // future paid instant-construction (disabled; never pay-to-win in Genesis)
  VERIFY_URL:'',                // your deployed verification worker, e.g. 'https://archangel-pay.<you>.workers.dev/verify' (see SETUP-PAYMENTS.md)
  CURRENCY:'AUD',
  LINKS:{                       // e.g. 'https://buy.stripe.com/xxxx' or 'https://ko-fi.com/s/xxxx'
@@ -85,6 +86,7 @@ H.panel.store=function(G){var h='<h3>Celestial Store</h3><p class="small">'+(CON
    (!st.owned[it.id]?'<button data-act="buy" data-arg="'+it.id+'">'+(CONFIG.PAYMENTS_ENABLED&&!it.soon?'Buy '+price(it):'Coming soon')+'</button>':'')+'</div>';});});
  h+='<h3>Free bonus</h3><div class="card">Watch a short (placeholder) ad for +2,500 Credits and +10 Research. Every '+CONFIG.AD_COOLDOWN_MIN+' min.<br><button data-act="watchAd">▶ Get bonus</button></div>';
  return h;};
+H.act.paidRush=function(G,i){if(!CONFIG.PAYMENTS_ENABLED||!CONFIG.PAID_SPEEDUP)return toast('Paid speed-ups are not available. Use Celestial Light instead.');/* future: buy('speedup') then AC.api.complete(+i) after verification */};
 AC.store={verifyStripeSession:verifyStripeSession,CONFIG:CONFIG,ITEMS:ITEMS,owns:owns,buy:buy,equip:equip,state:st,skin:function(){return SKINS[st.equip.skin];},theme:function(){return THEMES[st.equip.theme];},
  extraSlots:function(){return owns('founder')?3:0;},showRewardedAd:showRewardedAd,applyCosmetics:applyCosmetics,earlyAccess:function(){return owns('founder');}};
 H.init.push(applyCosmetics);
