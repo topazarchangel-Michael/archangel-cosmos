@@ -1,0 +1,7 @@
+# Only needed if you deploy with the Wrangler command-line tool (optional; the dashboard works too).
+name = "archangel-pay"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+[vars]
+ALLOWED_ORIGIN = "https://topazarchangel-michael.github.io"
+# Set secrets with:  npx wrangler secret put STRIPE_SECRET_KEY   and   npx wrangler secret put LINK_MAP

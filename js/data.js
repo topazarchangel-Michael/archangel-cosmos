@@ -8,7 +8,7 @@ AC.PHASES = [
    desc:'Govern Planet Elysia: city building, resource economy, Archangel AI advisor, missions, first spaceport and moon colony.'},
   {id:'starborn', n:2, name:'Archangel: Starborn', status:'live', title:'System Governor',
    desc:'Solar systems, interplanetary trade, corporations, research and diplomacy with the Lumarians and Aethari.'},
-  {id:'empires', n:3, name:'Galactic Empires', status:'soon', title:'Galactic Emperor',
+  {id:'empires', n:3, name:'Galactic Empires', status:'live', title:'Galactic Emperor',
    desc:'Thousands of star systems, alliances, the Grand Royal Council parliament, Titanborn and Celestian politics.'},
   {id:'architect', n:4, name:'Universe Architect', status:'soon', title:'Universe Creator',
    desc:'Universe, race, story and event editors. Design your own galaxies and histories.'},

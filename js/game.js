@@ -175,7 +175,9 @@ function loop(now){requestAnimationFrame(loop);
  if(!G||!ctx||document.hidden||!$('game').classList.contains('active'))return;
  if(now-lastF<(fxBusy||AC.render.moving()?16:(AC.settings.quality==='low'?66:33)))return;lastF=now; // ~25fps ambient, 60fps during effects
  if(dirty)rebuild();
+ if(AC.galaxy&&AC.galaxy.active()){AC.galaxy.frame(now);return;}
  if(AC.space&&AC.space.active()){AC.space.frame(now);return;}
+ if(AC.v3d&&AC.v3d.active()){AC.v3d.frame(now);return;}
  fxBusy=AC.render.draw(ctx,G,W,H,layers,now,hover,(hover!=null&&sel)?!placeError(BY[sel],hover):null);}
 function hud(){var R=G.res,n=G.net,s='<span title="Day">'+IC.day+'<b>'+G.day+'</b></span><span title="Population / housing">'+IC.pop+'<b>'+fmt(G.pop)+'</b><small>/'+fmt(housing())+'</small></span><span title="Happiness">'+IC.happy+'<b>'+Math.round(G.happy)+'%</b></span>';
  ['credits','food','water','energy','iron','metal','goods','titanium','crystal','research','light'].forEach(function(k){
@@ -204,7 +206,7 @@ function panels(){
   AC.RESEARCH.forEach(function(t){var st=G.tech[t.id]?'✔ Done':G.researching===t.id?'In progress ('+fmt(G.res.research)+'/'+t.cost+')':(t.req&&!G.tech[t.req])?'Needs '+t.req:'';
    r+='<div class="card'+(G.tech[t.id]?' done':'')+'" data-r="'+t.id+'"><span class="t">'+t.n+'</span> · '+t.cost+' 🔬<br><span class="e">'+t.d+'</span><br><small>'+st+'</small></div>';});
   $('tab-research').innerHTML=r;}}
-function render(){if(!G)return;hud();drawMap();panels();if(AC.H.panel[tab]){var el=$('tab-'+tab),ae=document.activeElement;if(el&&!(ae&&ae.tagName==='SELECT'&&el.contains(ae))){var st=el.scrollTop;el.innerHTML=AC.H.panel[tab](G);el.scrollTop=st;}}if(AC.H.render)AC.H.render(G);}
+function render(){if(!G)return;hud();drawMap();panels();if(AC.H.panel[tab]){var el=$('tab-'+tab),ae=document.activeElement;if(el&&!(ae&&(ae.tagName==='SELECT'||ae.tagName==='INPUT')&&el.contains(ae))){var st=el.scrollTop;el.innerHTML=AC.H.panel[tab](G);el.scrollTop=st;}}if(AC.H.render)AC.H.render(G);}
 function toast(t,kind){if(AC.audio)AC.audio.sfx(kind||(/not enough|cannot|must|requires|first|failed|only one|occupied/i.test(t)?'error':'notify'));var el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(function(){el.style.display='none';},2500);}
 
 /* ---------- save / load ---------- */
@@ -237,8 +239,8 @@ function init(){
  $('phaseList').innerHTML=AC.PHASES.map(function(p){return '<li><b>Phase '+p.n+': '+p.name+'</b>'+(p.status==='live'?'<span class="live">PLAYABLE</span>':'<span class="soon">COMING SOON</span>')+'<br><small>Rank: '+p.title+'. '+p.desc+'</small></li>';}).join('');
  $('btnContinue').disabled=!localStorage.getItem(SAVE_KEY);
  setupExtras();
- $('btnNew').onclick=function(){var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();focusCity();say(G.lastTip);};
- $('btnContinue').onclick=function(){if(load()){show('game');focusCity();}};
+ $('btnNew').onclick=function(){var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();focusCity();start3d();say(G.lastTip);};
+ $('btnContinue').onclick=function(){if(load()){show('game');focusCity();start3d();}};
  $('btnRoadmap').onclick=function(){show('roadmap');};if(AC.H.init)AC.H.init.forEach(function(f){f();});$('btnHelp').onclick=function(){show('help');};
  document.querySelectorAll('.back').forEach(function(b){b.onclick=function(){show('title');};});
  $('tabs').onclick=function(e){var t=e.target.dataset.tab;if(!t)return;tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});
@@ -251,21 +253,25 @@ function init(){
   if(d.r){var t=AC.RESEARCH.find(function(x){return x.id===d.r;});if(G.tech[t.id])return;if(t.req&&!G.tech[t.req])return toast('Requires '+t.req);G.researching=t.id;toast('Researching '+t.n);render();}
   if(d.launch)launch(d.launch);});
  cv.addEventListener('mousemove',function(e){if(AC.space&&AC.space.active())return;var i=tileAt(e);if(i!==hover){hover=i;if(i!=null)info(i);}});
- cv.addEventListener('click',function(e){if(AC.render.wasDrag())return;if(AC.space&&AC.space.active())return AC.space.click(e);var i=tileAt(e);if(i==null)return;hover=i;info(i);
-  if(sel)build(sel,i);else if(G.tiles[i].b){var b=BY[G.tiles[i].b];if(confirm(b.n+'\n'+b.d+'\n\nDemolish it for a 50% refund?'))demolish(i);}});
+ cv.addEventListener('click',function(e){if(AC.render.wasDrag())return;if(AC.galaxy&&AC.galaxy.active())return AC.galaxy.click(e);if(AC.space&&AC.space.active())return AC.space.click(e);tileClick(tileAt(e));});
  $('btnPause').onclick=function(){paused=!paused;this.textContent=paused?'Resume':'Pause';};
  $('btnSpeed').onclick=function(){speed=speed===1?2:speed===2?5:1;this.textContent='Speed x'+speed;};
  $('btnSave').onclick=function(){save();};$('btnLoad').onclick=function(){load();};
  $('btnTitle').onclick=function(){save(true);$('btnContinue').disabled=false;show('title');};
  $('btnReset').onclick=function(){if(confirm('Delete saved game?')){localStorage.removeItem(skey());toast('Save deleted.');}};
 }
+function start3d(){if(AC.v3d&&AC.v3d.wanted()&&!AC.v3d.active())AC.v3d.setOn(true);upd3d();}
+function upd3d(){var b=$('btn3d');if(b)b.textContent=(AC.v3d&&(AC.v3d.active()||AC.v3d.wanted()))?'2.5D':'3D';}
 function focusCity(){requestAnimationFrame(function(){if(!G)return;AC.render.resize();var i=G.tiles.findIndex(function(c){return c.b==='capital';});
  if(i<0){var best=-1,bd=1e9;G.tiles.forEach(function(c,j){if(c.t!=='plains')return;var d=Math.abs(j%W-W/2)+Math.abs((j/W|0)-H/2);if(d<bd){bd=d;best=j;}});i=best;}
- AC.render.focus((i%W+.5)*TS,((i/W|0)+.5)*TS);});}
+ AC.render.focus((i%W+.5)*TS,((i/W|0)+.5)*TS);if(AC.v3d&&AC.v3d.ready())AC.v3d.focus(i);});}
+function tileClick(i){if(i==null||!G)return;hover=i;info(i);
+ if(sel)build(sel,i);else if(G.tiles[i].b){var b=BY[G.tiles[i].b];if(confirm(b.n+'\n'+b.d+'\n\nDemolish it for a 50% refund?'))demolish(i);}}
 function switchTab(t){tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});document.querySelectorAll('.tab').forEach(function(d){d.classList.toggle('on',d.id==='tab-'+t);});render();}
 AC.H.act.tab=function(a,b){switchTab(typeof a==='string'?a:b);};
 function setupExtras(){var S=AC.settings;
  var m=$('settingsBox');m.innerHTML='<h3>Settings</h3><div class="row"><span>Graphics quality</span><select id="selQuality"><option value="auto">Auto</option><option value="high">High (desktop)</option><option value="low">Low (phones)</option></select></div>'+
+  '<div class="row"><span>3D view (WebGL)</span><select id="sel3d"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off (2.5D)</option></select></div>'+
   '<div class="row"><span>Day / night cycle</span><input type="checkbox" id="chkDay"></div>'+
   '<div class="row"><span>Music</span><input type="range" id="rngMusic" min="0" max="1" step="0.05"></div><div class="row"><span>Sound effects</span><input type="range" id="rngSfx" min="0" max="1" step="0.05"></div>'+
   '<div class="row"><span>Mute all</span><input type="checkbox" id="chkMute"></div><div class="row"><span>Save slot</span><select id="selSlot"></select></div>';
@@ -280,12 +286,15 @@ function setupExtras(){var S=AC.settings;
  $('btnMute').textContent=S.muted?'🔇':'🔊';
  $('btnMute').onclick=function(){S.muted=!S.muted;AC.saveSettings();AC.audio.apply();this.textContent=S.muted?'🔇':'🔊';$('chkMute').checked=S.muted;};
  $('btnZoomIn').onclick=function(){AC.render.zoom(1.3);};$('btnZoomOut').onclick=function(){AC.render.zoom(1/1.3);};$('btnFit').onclick=function(){AC.render.fitView();};
- $('btnSpaceView').onclick=function(){AC.space.toggle();};
+ $('btnSpaceView').onclick=function(){if(AC.galaxy.active())AC.galaxy.toggle();AC.space.toggle();};$('btnGalaxy').onclick=function(){AC.galaxy.toggle();};
+ $('btn3d').onclick=function(){if(!AC.v3d.webgl())return toast('WebGL is not available on this device; using 2.5D.');var on=!AC.v3d.active();S.r3d=on?'on':'off';AC.saveSettings();$('sel3d').value=S.r3d;AC.v3d.setOn(on);setTimeout(upd3d,300);this.textContent=on?'2.5D':'3D';toast(on?'3D view (drag to rotate, right-drag/two fingers to pan)':'2.5D view');};
+ $('sel3d').value=S.r3d||'auto';$('sel3d').onchange=function(){S.r3d=this.value;AC.saveSettings();AC.v3d.setOn(AC.v3d.wanted());setTimeout(upd3d,300);};
+ $('side').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='aiQ'){AC.H.act.ask(G);render();}});
  $('btnView').textContent=AC.render.mode()==='iso'?'▦':'◇';$('btnView').onclick=function(){AC.render.setMode(AC.render.mode()==='iso'?'top':'iso');this.textContent=AC.render.mode()==='iso'?'▦':'◇';toast(AC.render.mode()==='iso'?'Angled 2.5D view':'Top-down view');};
  $('btnCity').onclick=focusCity;
  setInterval(function(){var c=$('clock');if(c&&G)c.textContent=AC.space.active()?'Helion System':'Elysia '+AC.render.timeLabel();},1000);
  if(AC.store&&AC.store.owns('founder'))$('title').querySelector('.title-box').insertAdjacentHTML('beforeend','<p class="badge">✦ Founder ✦</p>');}
 // Public hooks (used by tests and future phases)
-AC.api={focusCity:focusCity,switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
+AC.api={tileClick:function(i){tileClick(i);},hoverTile:function(i){hover=i;if(i!=null)info(i);},canPlace:function(i){return sel?!placeError(BY[sel],i):null;},focusCity:focusCity,switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
 document.addEventListener('DOMContentLoaded',init);
 })();

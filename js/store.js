@@ -14,10 +14,12 @@ var AC=window.AC,H=AC.H;
 var CONFIG={
  PAYMENTS_ENABLED:false,
  DEV_UNLOCK_ALL:true,          // keep everything unlocked while payments are disabled (testing)
- PROVIDER:'none',              // 'none' | 'stripe' | 'kofi'
+ PROVIDER:'stripe',            // 'none' | 'stripe' | 'kofi'  (only used when PAYMENTS_ENABLED is true)
+ VERIFY_URL:'',                // your deployed verification worker, e.g. 'https://archangel-pay.<you>.workers.dev/verify' (see SETUP-PAYMENTS.md)
  CURRENCY:'AUD',
  LINKS:{                       // e.g. 'https://buy.stripe.com/xxxx' or 'https://ko-fi.com/s/xxxx'
-  founder:'',starborn:'',empires:'',skin_gold:'',skin_sapphire:'',skin_rose:'',halo_seraph:'',halo_cherub:'',theme_aurora:'',theme_twilight:''},
+  founder:'',starborn:'',empires:'',   // Stripe Payment Links: https://buy.stripe.com/... (see SETUP-PAYMENTS.md)
+  skin_gold:'',skin_sapphire:'',skin_rose:'',halo_seraph:'',halo_cherub:'',theme_aurora:'',theme_twilight:''},
  AD_COOLDOWN_MIN:10
 };
 var ITEMS=[
@@ -46,13 +48,21 @@ function toast(t,k){if(AC.api)AC.api.toast(t,k);}
 // Payment provider adapters (no network calls happen while PAYMENTS_ENABLED=false)
 var PROVIDERS={
  none:function(it){toast('Purchases are coming soon. '+it.n+' will cost '+price(it)+'.');},
- stripe:function(it){var u=CONFIG.LINKS[it.id];if(!u)return toast('No Stripe Payment Link configured for '+it.n+'.');window.open(u,'_blank','noopener');},
+ stripe:function(it){var u=CONFIG.LINKS[it.id];if(!u)return toast('No Stripe Payment Link configured for '+it.n+'.');window.open(u+(u.indexOf('?')<0?'?':'&')+'client_reference_id='+encodeURIComponent(it.id+'_'+deviceId()),'_blank','noopener');},
  kofi:function(it){var u=CONFIG.LINKS[it.id];if(!u)return toast('No Ko-fi link configured for '+it.n+'.');window.open(u,'_blank','noopener');}
 };
 function buy(id){var it=ITEMS.find(function(x){return x.id===id;});if(!it)return;
  if(!CONFIG.PAYMENTS_ENABLED||it.soon)return toast('Coming soon: '+it.n+' ('+price(it)+'). No payment is taken yet'+(devUnlocked()?'; it is unlocked for testing.':'.'));
  (PROVIDERS[CONFIG.PROVIDER]||PROVIDERS.none)(it);}
-function verifyCode(id,code){/* PLACEHOLDER: replace with a server check (e.g. a free serverless function validating the Stripe session). */return false;}
+function deviceId(){if(!st.device){st.device=Math.random().toString(36).slice(2,10);persist();}return st.device;}
+function verifyCode(id,code){return false;}
+// Stripe return flow: set each Payment Link's "after payment" redirect to  <your site>/index.html?session_id={CHECKOUT_SESSION_ID}
+function verifyStripeSession(sid){if(!CONFIG.PAYMENTS_ENABLED||!CONFIG.VERIFY_URL)return;
+ fetch(CONFIG.VERIFY_URL+'?session_id='+encodeURIComponent(sid)).then(function(r){return r.json();}).then(function(j){
+  if(j&&j.paid&&j.item&&ITEMS.some(function(i){return i.id===j.item;})){grant(j.item);(st.receipts=st.receipts||[]).push({item:j.item,session:sid,date:Date.now()});persist();setTimeout(function(){toast('Thank you! '+j.item+' unlocked.','success');},1500);}
+  else setTimeout(function(){toast('Payment could not be verified. Contact support with your receipt.');},1500);
+  history.replaceState(null,'',location.pathname);}).catch(function(){setTimeout(function(){toast('Could not reach the payment server; try again later.');},1500);});}
+(function(){var m=/[?&]session_id=([\w-]+)/.exec(location.search||'');if(m)verifyStripeSession(m[1]);})();
 function grant(id){st.owned[id]=true;persist();}
 // handle return from a provider: ?unlock=id&code=...
 (function(){var m=/[?&]unlock=([\w]+)&code=([\w-]+)/.exec(location.search||'');if(m&&CONFIG.PAYMENTS_ENABLED&&verifyCode(m[1],m[2]))grant(m[1]);})();
@@ -75,7 +85,7 @@ H.panel.store=function(G){var h='<h3>Celestial Store</h3><p class="small">'+(CON
    (!st.owned[it.id]?'<button data-act="buy" data-arg="'+it.id+'">'+(CONFIG.PAYMENTS_ENABLED&&!it.soon?'Buy '+price(it):'Coming soon')+'</button>':'')+'</div>';});});
  h+='<h3>Free bonus</h3><div class="card">Watch a short (placeholder) ad for +2,500 Credits and +10 Research. Every '+CONFIG.AD_COOLDOWN_MIN+' min.<br><button data-act="watchAd">▶ Get bonus</button></div>';
  return h;};
-AC.store={CONFIG:CONFIG,ITEMS:ITEMS,owns:owns,buy:buy,equip:equip,state:st,skin:function(){return SKINS[st.equip.skin];},theme:function(){return THEMES[st.equip.theme];},
+AC.store={verifyStripeSession:verifyStripeSession,CONFIG:CONFIG,ITEMS:ITEMS,owns:owns,buy:buy,equip:equip,state:st,skin:function(){return SKINS[st.equip.skin];},theme:function(){return THEMES[st.equip.theme];},
  extraSlots:function(){return owns('founder')?3:0;},showRewardedAd:showRewardedAd,applyCosmetics:applyCosmetics,earlyAccess:function(){return owns('founder');}};
 H.init.push(applyCosmetics);
 })();

@@ -87,3 +87,9 @@ select{background:#14183f;color:#fff;border:1px solid var(--line);border-radius:
 .badge{color:#1a1440;background:linear-gradient(#fff1c2,#d9a93f);border-radius:12px;padding:2px 12px;font-weight:bold}
 body.space #tileInfo{display:none}
 @media (max-width:760px){#mapCtl button{width:30px;height:30px;font-size:14px}#clock{font-size:10px}}
+#map3d{position:absolute;inset:0;width:100%;height:100%;display:none;touch-action:none}
+body.v3d #map3d{display:block}body.v3d #map{visibility:hidden}
+body.v3d.space #map3d,body.v3d.galaxy #map3d{display:none}body.v3d.space #map,body.v3d.galaxy #map{visibility:visible}
+body.galaxy #tileInfo{display:none}
+.book{max-width:720px}.book pre{white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.5;max-height:60vh;overflow:auto;background:rgba(0,0,0,.25);padding:10px;border-radius:10px}
+.spark{vertical-align:middle}#aiQ,#corpName{background:#14183f;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;font:inherit;font-size:13px}
