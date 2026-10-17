@@ -237,8 +237,8 @@ function init(){
  $('phaseList').innerHTML=AC.PHASES.map(function(p){return '<li><b>Phase '+p.n+': '+p.name+'</b>'+(p.status==='live'?'<span class="live">PLAYABLE</span>':'<span class="soon">COMING SOON</span>')+'<br><small>Rank: '+p.title+'. '+p.desc+'</small></li>';}).join('');
  $('btnContinue').disabled=!localStorage.getItem(SAVE_KEY);
  setupExtras();
- $('btnNew').onclick=function(){var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();say(G.lastTip);};
- $('btnContinue').onclick=function(){if(load())show('game');};
+ $('btnNew').onclick=function(){var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();focusCity();say(G.lastTip);};
+ $('btnContinue').onclick=function(){if(load()){show('game');focusCity();}};
  $('btnRoadmap').onclick=function(){show('roadmap');};if(AC.H.init)AC.H.init.forEach(function(f){f();});$('btnHelp').onclick=function(){show('help');};
  document.querySelectorAll('.back').forEach(function(b){b.onclick=function(){show('title');};});
  $('tabs').onclick=function(e){var t=e.target.dataset.tab;if(!t)return;tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});
@@ -259,6 +259,9 @@ function init(){
  $('btnTitle').onclick=function(){save(true);$('btnContinue').disabled=false;show('title');};
  $('btnReset').onclick=function(){if(confirm('Delete saved game?')){localStorage.removeItem(skey());toast('Save deleted.');}};
 }
+function focusCity(){requestAnimationFrame(function(){if(!G)return;AC.render.resize();var i=G.tiles.findIndex(function(c){return c.b==='capital';});
+ if(i<0){var best=-1,bd=1e9;G.tiles.forEach(function(c,j){if(c.t!=='plains')return;var d=Math.abs(j%W-W/2)+Math.abs((j/W|0)-H/2);if(d<bd){bd=d;best=j;}});i=best;}
+ AC.render.focus((i%W+.5)*TS,((i/W|0)+.5)*TS);});}
 function switchTab(t){tab=t;document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===t);});document.querySelectorAll('.tab').forEach(function(d){d.classList.toggle('on',d.id==='tab-'+t);});render();}
 AC.H.act.tab=function(a,b){switchTab(typeof a==='string'?a:b);};
 function setupExtras(){var S=AC.settings;
@@ -278,9 +281,11 @@ function setupExtras(){var S=AC.settings;
  $('btnMute').onclick=function(){S.muted=!S.muted;AC.saveSettings();AC.audio.apply();this.textContent=S.muted?'🔇':'🔊';$('chkMute').checked=S.muted;};
  $('btnZoomIn').onclick=function(){AC.render.zoom(1.3);};$('btnZoomOut').onclick=function(){AC.render.zoom(1/1.3);};$('btnFit').onclick=function(){AC.render.fitView();};
  $('btnSpaceView').onclick=function(){AC.space.toggle();};
+ $('btnView').textContent=AC.render.mode()==='iso'?'▦':'◇';$('btnView').onclick=function(){AC.render.setMode(AC.render.mode()==='iso'?'top':'iso');this.textContent=AC.render.mode()==='iso'?'▦':'◇';toast(AC.render.mode()==='iso'?'Angled 2.5D view':'Top-down view');};
+ $('btnCity').onclick=focusCity;
  setInterval(function(){var c=$('clock');if(c&&G)c.textContent=AC.space.active()?'Helion System':'Elysia '+AC.render.timeLabel();},1000);
  if(AC.store&&AC.store.owns('founder'))$('title').querySelector('.title-box').insertAdjacentHTML('beforeend','<p class="badge">✦ Founder ✦</p>');}
 // Public hooks (used by tests and future phases)
-AC.api={switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
+AC.api={focusCity:focusCity,switchTab:switchTab,slot:function(n){if(n)slot=n;return slot;},migrate:function(g){return migrate(g);},toast:toast,say:say,render:render,fmt:fmt,canAfford:canAfford,costStr:function(c){return costStr(c);},BY:BY,housing:function(){return housing();},show:show,dirty:function(){dirty=true;},newGame:newGame,tick:tick,build:build,trade:trade,save:save,load:load,launch:launch,state:function(){return G;},setState:function(s){G=s;render();},W:W,H:H};
 document.addEventListener('DOMContentLoaded',init);
 })();
