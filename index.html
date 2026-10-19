@@ -45,13 +45,13 @@
 </div>
 
 <div id="game" class="screen">
-  <header id="hud"></header>
+  <header id="hud"></header><div id="saveInd"></div>
   <main>
     <div id="mapWrap"><canvas id="map"></canvas><div id="tileInfo"></div><div id="mapCtl"><span id="clock"></span><button id="btnZoomIn" title="Zoom in">＋</button><button id="btnZoomOut" title="Zoom out">－</button><button id="btnFit" title="Whole planet">⤢</button><button id="btnCity" title="Centre on city">⌂</button><button id="btnView" title="Toggle angled / top-down view">▦</button><button id="btnStreet" title="Street view: walk your Angelic avatar">🚶</button><button id="btn3d" title="Toggle 3D / 2.5D">3D</button><button id="btnSpaceView" title="Solar system">🪐</button><button id="btnGalaxy" title="Galaxy map">🌌</button><button id="btnArch" title="Creation view">🌠</button><button id="btnMute" title="Sound">🔊</button></div></div>
     <aside id="side">
       <nav id="tabs">
         <button data-tab="build" class="on">Build</button><button data-tab="market">Market</button>
-        <button data-tab="missions">Missions</button><button data-tab="research">Research</button><button data-tab="host">Host</button><button data-tab="space">Space</button><button data-tab="galaxy">Galaxy</button><button data-tab="corps">Corps</button><button data-tab="architect">Architect</button><button data-tab="cosmos">Cosmos</button><button data-tab="ai">AI</button><button data-tab="store">Store</button><button data-tab="menu">Menu</button>
+        <button data-tab="missions">Missions</button><button data-tab="research">Research</button><button data-tab="host">Host</button><button data-tab="space">Space</button><button data-tab="galaxy">Galaxy</button><button data-tab="corps">Corps</button><button data-tab="architect">Architect</button><button data-tab="cosmos">Cosmos</button><button data-tab="forces">Forces</button><button data-tab="ai">AI</button><button data-tab="store">Store</button><button data-tab="menu">Menu</button>
       </nav>
       <div id="tab-build" class="tab on"></div>
       <div id="tab-market" class="tab"></div>
@@ -63,12 +63,15 @@
       <div id="tab-galaxy" class="tab"></div>
       <div id="tab-corps" class="tab"></div>
       <div id="tab-ai" class="tab"></div>
+      <div id="tab-forces" class="tab"></div>
       <div id="tab-architect" class="tab"></div>
       <div id="tab-cosmos" class="tab"></div>
       <div id="tab-menu" class="tab">
         <button id="btnPause">Pause</button> <button id="btnSpeed">Speed x1</button>
         <button id="btnSave">Save</button> <button id="btnLoad">Load</button>
         <button id="btnTitle">Title Screen</button> <button id="btnReset">Delete Save</button>
+        <div class="small" style="margin-top:6px">Back up your game: <button id="btnExport">⬇ Export save</button> <button id="btnImport">⬆ Import save</button> <button id="btnBackups">Backups</button><input type="file" id="fileImport" accept=".json,application/json" hidden></div>
+        <p class="small" id="saveHelp">Saves autosave every 2 minutes and when you leave the page. They are stored in this browser only. An installed app and the browser can keep separate saves, so use Export/Import to move a game between them or to another device.</p>
         <div id="settingsBox"></div>
         <p class="small">Saves are stored in this browser only (localStorage). Clearing browser data erases them.</p>
       </div>
@@ -77,7 +80,9 @@
   </main>
   <div id="toast"></div>
 </div>
+<script src="js/vendor/lz-string.min.js"></script>
 <script src="js/data.js"></script>
+<script src="js/save.js"></script>
 <script src="js/art.js"></script>
 <script src="js/render.js"></script>
 <script src="js/audio.js"></script>
@@ -90,5 +95,6 @@
 <script src="js/view3d.js"></script>
 <script src="js/street.js"></script>
 <script src="js/architect.js"></script>
+<script src="js/military.js"></script>
 <script src="js/game.js"></script>
 </body></html>

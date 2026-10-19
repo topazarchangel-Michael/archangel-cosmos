@@ -127,6 +127,7 @@ function objects(ctx,G,W,H,layers,vis,now){var T=32,iso=V.mode==='iso',m=M(),Z=V
   walk.forEach(function(i){for(var w=0;w<2;w++){var h=AC.art.hash(i,w,21),ph=(t*0.12*(0.6+h)+h*7)%1,horiz=AC.art.hash(i,w,22)<0.5,dir=AC.art.hash(i,w,23)<0.5?1:-1,o=(AC.art.hash(i,w,24)-0.5)*5;
    var wx=(i%W)*T+(horiz?(dir>0?ph:1-ph)*T:16+o),wy=((i/W)|0)*T+(horiz?16+o:(dir>0?ph:1-ph)*T);figure(ctx,wx,wy,t+h*9,h,iso,Z);n++;}});
   layers.bl.forEach(function(i){if(!inV(i))return;var h=AC.art.hash(i,3,25);if(h>0.7)return;var a=t*0.3*(h+0.4)+h*6,wx=(i%W)*T+16+Math.cos(a)*15,wy=((i/W)|0)*T+16+Math.sin(a)*13;figure(ctx,wx,wy,t+h*5,h,iso,Z);});}
+ if(AC.mil)AC.mil.draw2d(ctx,G,toScreen,Z,iso,T,t,function(x,y){return x>=vis.x0-1&&x<=vis.x1+2&&y>=vis.y0-1&&y<=vis.y1+2;});
 }
 function figure(ctx,wx,wy,t,h,iso,Z){var p=toScreen(wx,wy),s=Z*0.9;ctx.setTransform(s,0,0,s,p.x,p.y);var bob=Math.abs(Math.sin(t*6))*0.4;
  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,0.3,1.4,0.5,0,0,7);ctx.fill();

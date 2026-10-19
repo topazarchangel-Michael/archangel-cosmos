@@ -15,3 +15,16 @@
 - **Archangel Cosmos** (Cosmos tab): unlocks after you weave a galaxy and raise 3 sapient worlds. Kindle universes and tune their gravity, light, entropy and harmony, then complete the 6-stage Celestial Ascension with the Royal Heavenly Host to become Archangel Prime. That plays the ending and credits, then an endless sandbox. New resource: Omniversal Light. Missions X01 to X07.
 - Store expansion flags `architect` and `cosmos` (unlocked while payments are off).
 - Testing shortcut: open `index.html?dev=1`, then Menu → "Jump to phase 2–5". It is hidden without `?dev=1`.
+
+## Saving (v9)
+- Saves go to IndexedDB (primary) with a compressed localStorage mirror (vendored lz-string, MIT). The browser is asked to keep storage persistent.
+- Autosave runs every 2 minutes of real time and whenever the tab is hidden or closed. A "Saved ✓" indicator sits bottom-right, and a red toast appears if a save fails.
+- Each slot keeps 3 rotating backups. If the main save is corrupt, loading falls back to a backup automatically (Menu → Backups).
+- Menu → Export save / Import save moves a save file between devices, or between the browser and the installed app.
+- Tests: `python3 test_save.py` checks a reload, an SW update, a large state, backup fallback, export/import, legacy import and slot persistence.
+
+## Forces & transport (v9)
+- New structures: Harbour, Naval Shipyard, Airport, Rail Station, Bus Depot, Police, Fire, School, Barracks, War Factory, Watchtower and Wall.
+- New units (training timers + upkeep): fishing boats, cargo ships, ferries, warships, soldiers, Angelic Legions, tanks, planes, helicopters, angelic flyers, buses, trains, police cars, fire engines, shuttles, fighters, star cruisers and carriers.
+- Raids (sea, land, air, space) test your defence. Trade units earn income and flyers explore for relics.
+- Traffic, trains, boats, aircraft, power lines and rails are animated in 2.5D and 3D. The amount scales with the Quality setting.

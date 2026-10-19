@@ -163,12 +163,13 @@ function frame(now){var G=AC.api.state();if(!G)return;if(G.tiles!==(G0&&G0.tiles
   if(b.con.left!==c.con.left){b.con.left=c.con.left;drawBar(b.con,f,c.con.left);}b.con.crane.rotation.y=t*0.4;});
  if(street)hover=null;
  if(hover!=null){var hx=hover%W,hy=(hover/W)|0;hoverMesh.visible=true;hoverMesh.position.set(hx+0.5-W/2,surface(G,hx,hy)+0.06,hy+0.5-H/2);hoverMesh.material.color.setHex(AC.api.canPlace&&AC.api.canPlace(hover)===false?0xff5050:0xffe08a);}else hoverMesh.visible=false;
+ if(AC.mil)try{AC.mil.draw3d(t,street);}catch(e){console.warn(e);}
  renderer.render(scene,camera);}
 function setOn(v){if(v&&failed){AC.api.toast('3D could not start; using the 2.5D view.');v=false;}
  if(v&&!window.THREE){load(function(){try{mats();init();on=true;document.body.classList.add('v3d');}catch(e){failed=true;on=false;console.warn('3D init failed',e);}});return;}
  if(v&&!renderer){try{mats();init();}catch(e){failed=true;return;}}
  on=v;document.body.classList.toggle('v3d',on);if(on)size();}
-AC.v3d={ctx:function(){return {T:T,scene:scene,camera:camera,renderer:renderer,cvs:cvs,W:W,H:H,built:built,hAt:function(x,y){return hAt(G0,x,y);},MAT:MAT,geo:geo,B:B};},active:function(){return on&&!!renderer;},frame:frame,setOn:setOn,wanted:wanted,webgl:webgl,pick:pick,cam:cam,
+AC.v3d={R:R,ctx:function(){return {T:T,scene:scene,camera:camera,renderer:renderer,cvs:cvs,W:W,H:H,built:built,hAt:function(x,y){return hAt(G0,x,y);},MAT:MAT,geo:geo,B:B};},active:function(){return on&&!!renderer;},frame:frame,setOn:setOn,wanted:wanted,webgl:webgl,pick:pick,cam:cam,
  focus:function(i){cam.tx=i%W+0.5-W/2;cam.tz=((i/W)|0)+0.5-H/2;cam.dist=S.q==='high'?13:10;},wasDrag:function(){return dragged;},ready:function(){return !!renderer;},
  info:function(){return renderer?{calls:renderer.info.render.calls,tris:renderer.info.render.triangles,meshes:bgroup?bgroup.children.length:0}:null;}};
 })();

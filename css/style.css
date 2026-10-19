@@ -117,3 +117,5 @@ body.arch #arch3d{display:block}body.arch #map3d,body.arch #tileInfo{display:non
 #ending .roll{animation:roll 40s linear infinite;line-height:1.9;font-size:17px}@keyframes roll{from{transform:translateY(40vh)}to{transform:translateY(-100%)}}@keyframes fadein{from{opacity:0}to{opacity:1}}
 #ending .end-glow{position:absolute;inset:-20%;background:conic-gradient(from 0deg,transparent,rgba(255,215,106,.08),transparent 30%);animation:spin 30s linear infinite;pointer-events:none}@keyframes spin{to{transform:rotate(360deg)}}
 #ending button{margin-top:14px;z-index:1}
+#saveInd{position:fixed;right:8px;bottom:8px;z-index:60;font-size:11px;padding:3px 8px;border-radius:10px;background:rgba(10,14,40,.7);color:#bfe8c0;pointer-events:none;transition:transform .3s}
+#saveInd:empty{display:none}#saveInd.bad{color:#ff9a9a;background:rgba(80,10,20,.85)}#saveInd.flash{transform:scale(1.25)}

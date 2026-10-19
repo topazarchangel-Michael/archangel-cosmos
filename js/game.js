@@ -5,7 +5,7 @@ var W=48,H=32,TS=AC.art.TS,SAVE_KEY='archangelCosmos.save.v1';
 AC.H=AC.H||{prod:[],tax:[],sell:[],happy:[],growth:[],tick:[],migrate:[],panel:{},act:{},advise:[]};
 function hmul(n,a){var m=1;AC.H[n].forEach(function(f){m*=f.apply(null,a);});return m;}
 function hsum(n,a){var m=0;AC.H[n].forEach(function(f){m+=f.apply(null,a);});return m;}
-var slot=1;function skey(){return slot===1?SAVE_KEY:SAVE_KEY+'.slot'+slot;}
+var slot=1;try{slot=+localStorage.getItem('archangelCosmos.slotSel')||1;}catch(e){}function skey(){return slot===1?SAVE_KEY:SAVE_KEY+'.slot'+slot;}
 var G=null, sel=null, timer=null, speed=1, paused=false;
 var BY={}; AC.BUILDINGS.forEach(function(b){BY[b.id]=b;});
 var $=function(id){return document.getElementById(id);};
@@ -225,8 +225,16 @@ function toast(t,kind){if(AC.audio)AC.audio.sfx(kind||(/not enough|cannot|must|r
 
 /* ---------- save / load ---------- */
 function migrate(g){g.v=g.v||1;AC.H.migrate.forEach(function(f){f(g);});g.v=2;return g;}
-function save(quiet){try{G.saved=Date.now();localStorage.setItem(skey(),JSON.stringify(G));if(!quiet)toast('Game saved.');return true;}catch(e){toast('Save failed: '+e.message);return false;}}
-function load(){try{var s=localStorage.getItem(skey());if(!s){toast('No save found.');return false;}G=migrate(JSON.parse(s));terrFor=null;dirty=true;say(G.lastTip||'Welcome back, Governor.');render();toast('Game loaded (day '+G.day+').');return true;}catch(e){toast('Load failed.');return false;}}
+var saveFailNote=0;
+function saveInd(ok,msg){var el=$('saveInd');if(!el)return;el.textContent=ok?'Saved ✓ '+new Date().toTimeString().slice(0,5):'⚠ Not saved';el.className=ok?'ok':'bad';el.title=msg||'';el.classList.add('flash');setTimeout(function(){el.classList.remove('flash');},900);}
+function save(quiet,reason){if(!G)return false;G.saved=Date.now();var r=AC.saves.put(slot,G,reason||(quiet?'auto':'manual'));
+ if(r.ok){saveInd(true,(r.idb?'IndexedDB':'')+(r.ls?' + local mirror':'')+' · '+Math.round(r.size/1024)+' KB');if(!quiet)toast('Game saved (slot '+slot+').','success');
+  if(r.promise)r.promise.catch(function(e){if(!r.ls){saveInd(false,e.message);toast('⚠ Save failed: '+e.message+'. Use Menu → Export save to keep a backup file.','error');}});return true;}
+ saveInd(false,r.err);if(!quiet||Date.now()-saveFailNote>60000){saveFailNote=Date.now();toast('⚠ Save failed: '+r.err+'. Use Menu → Export save to keep a backup file.','error');}return false;}
+function loadJSON(json,from){var g=JSON.parse(json);G=migrate(g);terrFor=null;dirty=true;say(G.lastTip||'Welcome back, Governor.');render();toast('Game loaded (day '+G.day+(from&&from!=='main'?', from '+from:'')+').');return true;}
+function load(){var s=AC.saves.get(slot);if(!s){toast('No save found in slot '+slot+'.');return false;}
+ try{return loadJSON(s.json,s.from);}catch(e){console.warn('Load failed',e);for(var b=0;b<3;b++){var j=AC.saves.getBackup(slot,b);if(!j)continue;try{loadJSON(j,'backup '+(b+1));toast('The main save could not be read ('+e.message+'); restored backup '+(b+1)+'.','alert');return true;}catch(e2){}}
+  toast('⚠ Load failed: '+e.message+'. Your save was NOT deleted. Try Menu → Import save or contact support.','error');return false;}}
 
 /* ---------- screens & input ---------- */
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.toggle('active',s.id===id);});
@@ -251,9 +259,9 @@ function init(){
  cv=$('map');ctx=cv.getContext('2d');AC.render.attach(cv,W*TS,H*TS);stars();addEventListener('resize',stars);requestAnimationFrame(titleLoop);requestAnimationFrame(loop);document.querySelector('.title-box').insertAdjacentHTML('afterbegin',AC.art.EMBLEM);
  if(/^https?:/.test(location.protocol)){var ml=document.createElement('link');ml.rel='manifest';ml.href='manifest.json';document.head.appendChild(ml);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});}
  $('phaseList').innerHTML=AC.PHASES.map(function(p){return '<li><b>Phase '+p.n+': '+p.name+'</b>'+(p.status==='live'?'<span class="live">PLAYABLE</span>':'<span class="soon">COMING SOON</span>')+'<br><small>Rank: '+p.title+'. '+p.desc+'</small></li>';}).join('');
- $('btnContinue').disabled=!localStorage.getItem(SAVE_KEY);
+ $('btnContinue').disabled=true;AC.saves.whenReady(updContinue);
  setupExtras();
- $('btnNew').onclick=function(){var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();focusCity();start3d();say(G.lastTip);};
+ $('btnNew').onclick=function(){if(AC.saves.has(slot)&&!confirm('Start a new game? Your current save in slot '+slot+' will be overwritten at the next autosave (a backup is kept). Tip: use Continue to keep playing.'))return;var s=parseInt($('seedInput').value,10);newGame(isNaN(s)?0:s);show('game');render();focusCity();start3d();say(G.lastTip);};
  $('btnContinue').onclick=function(){if(load()){show('game');focusCity();start3d();}};
  $('btnRoadmap').onclick=function(){show('roadmap');};if(AC.H.init)AC.H.init.forEach(function(f){f();});$('btnHelp').onclick=function(){show('help');};
  document.querySelectorAll('.back').forEach(function(b){b.onclick=function(){show('title');};});
@@ -272,8 +280,17 @@ function init(){
  $('btnSpeed').onclick=function(){speed=speed===1?2:speed===2?5:1;this.textContent='Speed x'+speed;};
  $('btnSave').onclick=function(){save();};$('btnLoad').onclick=function(){load();};
  $('btnTitle').onclick=function(){save(true);$('btnContinue').disabled=false;show('title');};
- $('btnReset').onclick=function(){if(confirm('Delete saved game?')){localStorage.removeItem(skey());toast('Save deleted.');}};
+ $('btnReset').onclick=function(){if(confirm('Delete the saved game in slot '+slot+' and its backups? This cannot be undone.')){AC.saves.remove(slot);toast('Save deleted.');updContinue();}};
+ // autosave: every 2 minutes of real time, and whenever the page is hidden/closed (phones kill background tabs)
+ setInterval(function(){if(G&&$('game')&&$('game').classList.contains('active'))save(true,'auto');},120000);
+ document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'&&G)save(true,'hide');});
+ addEventListener('pagehide',function(){if(G)save(true,'hide');});addEventListener('beforeunload',function(){if(G)save(true,'hide');});
+ $('btnExport').onclick=function(){if(!G)return toast('Start or continue a game first.');save(true);AC.saves.exportFile(G);toast('Save file downloaded. Keep it somewhere safe (e.g. email it to yourself).');};
+ $('btnImport').onclick=function(){$('fileImport').click();};
+ $('fileImport').onchange=function(){var f=this.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){try{var g=AC.saves.parseImport(rd.result);if(G&&!confirm('Replace the current game with the imported save (day '+g.day+')?'))return;loadJSON(JSON.stringify(g),'file');show('game');focusCity();save(false,'manual');}catch(e){toast('⚠ Import failed: '+e.message,'error');}};rd.readAsText(f);this.value='';};
+ $('btnBackups').onclick=function(){var h='';for(var b=0;b<3;b++){var inf=AC.saves.info(slot,b);if(inf)h+='\n'+(b+1)+': day '+inf.day+', saved '+new Date(inf.t).toLocaleString();}if(!h)return toast('No backups yet for slot '+slot+'. Backups are made every few minutes as you play.');var n=prompt('Backups for slot '+slot+':'+h+'\n\nType 1, 2 or 3 to restore:');var b2=parseInt(n,10)-1;if(b2>=0&&b2<3){var j=AC.saves.getBackup(slot,b2);if(j){loadJSON(j,'backup '+(b2+1));show('game');save(true,'manual');}}};
 }
+function updContinue(){var b=$('btnContinue');if(!b)return;var inf=AC.saves.info(slot);b.disabled=!inf;b.textContent=inf?'Continue (slot '+slot+', day '+inf.day+')':'Continue';}
 function start3d(){if(AC.v3d&&AC.v3d.wanted()&&!AC.v3d.active())AC.v3d.setOn(true);upd3d();}
 function upd3d(){var b=$('btn3d');if(b)b.textContent=(AC.v3d&&(AC.v3d.active()||AC.v3d.wanted()))?'2.5D':'3D';}
 function focusCity(){requestAnimationFrame(function(){if(!G)return;AC.render.resize();var i=G.tiles.findIndex(function(c){return c.b==='capital';});
@@ -296,7 +313,7 @@ function setupExtras(){var S=AC.settings;
  $('rngMusic').oninput=function(){S.music=+this.value;AC.saveSettings();AC.audio.apply();};
  $('rngSfx').oninput=function(){S.sfx=+this.value;AC.saveSettings();AC.audio.apply();};
  $('chkMute').onchange=function(){S.muted=this.checked;AC.saveSettings();AC.audio.apply();$('btnMute').textContent=S.muted?'🔇':'🔊';};
- $('selSlot').onchange=function(){slot=+this.value;toast('Using save slot '+slot+'.');};
+ $('selSlot').onchange=function(){slot=+this.value;try{localStorage.setItem('archangelCosmos.slotSel',slot);}catch(e){}updContinue();toast('Using save slot '+slot+(AC.saves.has(slot)?' (day '+AC.saves.info(slot).day+')':' (empty)')+'.');};
  $('btnMute').textContent=S.muted?'🔇':'🔊';
  $('btnMute').onclick=function(){S.muted=!S.muted;AC.saveSettings();AC.audio.apply();this.textContent=S.muted?'🔇':'🔊';$('chkMute').checked=S.muted;};
  $('btnZoomIn').onclick=function(){AC.render.zoom(1.3);};$('btnZoomOut').onclick=function(){AC.render.zoom(1/1.3);};$('btnFit').onclick=function(){AC.render.fitView();};
